@@ -1,4 +1,12 @@
-class HexGrid { //<>// //<>//
+/* //<>// //<>// //<>//
+Hex grid calculations are based on the excellent, thorough, and remarkably interactive Hexagonal Grids guide
+ from Amit Patel at Red Blob Games (https://www.redblobgames.com/grids/hexagons)
+ 
+ There is also an implementation guide, which I did not see until I had done a lot of things the ugly way.
+ If there is time, I will refactor this class into something resembling their much more elegant version.
+ https://www.redblobgames.com/grids/hexagons/implementation.html
+ */
+class HexGrid {
   HashMap<PVector, Hexagon> activeHexes;
   HashMap<PVector, Hexagon> allHexes;
   Arena arena;
@@ -8,6 +16,10 @@ class HexGrid { //<>// //<>//
   int rMin = -13; //the r axis is 30 degrees counterclockwise to the q/x axis. Higher values are down and to the left
   int rMax = 13;
   int hexSize;
+  Hexagon r1Hex;
+
+
+
   HexGrid(int hexSize_) {
 
     arena = new Arena();
@@ -58,13 +70,21 @@ class HexGrid { //<>// //<>//
     for (Map.Entry<PVector, Hexagon> me : activeHexes.entrySet()) {
       Hexagon h = me.getValue();
       if (h.inBounds) {
-        h.drawHex(color(255), 10);
+        h.drawHex();
       }
     }
   }
 
   void setCorners(int ident, int x, int y) {
     arena.setCorners(ident, x, y);
+  }
+
+  void occupyHex(Rover rover, Hexagon newHex, Hexagon lastHex) {
+
+    newHex.occupy(rover);
+    if (lastHex != null) {
+      lastHex.vacate();
+    }
   }
 
   Hexagon getHex(PVector hexKey) { //hashmap lookup to return hexagon from PVector key
@@ -84,13 +104,13 @@ class HexGrid { //<>// //<>//
     hexID.z = (-1./3 * xPixel + sqrt(3)/3 * yPixel)/hexSize;
     hexID.y = (-hexID.x - hexID.z);
     hexID = cubeRound(hexID);
-    Hexagon h = getHex(hexID);
+    Hexagon h = allHexes.get(hexID);
     return h;
   }
 
-  Hexagon[] getNeighbors(Hexagon h) { //return an array of the 6 neighbor cells. If the neighbor is out of bounds, its array location will be null //<>//
+  Hexagon[] getNeighbors(Hexagon h) { //return an array of the 6 neighbor cells. If the neighbor is out of bounds, its array location will be null
     Hexagon[] neighborList = new Hexagon[6];
-    PVector hexID = h.getID(); //<>//
+    PVector hexID = h.getID();
     for (int i = 0; i < 6; i++) {
       PVector neighborID = hexID.copy();
       neighborID = neighborID.add(neighbors[i]);

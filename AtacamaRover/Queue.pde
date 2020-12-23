@@ -24,21 +24,20 @@ class Queue {
       byte[] mainQueue = new byte[5];
       byte[] funcQueue = new byte[5];
       byte[] inBuffer = new byte[12];
-      byte interesting = 16;
+      byte interesting = 16; //endByte
       inBuffer = myPort.readBytesUntil(interesting);
       if (inBuffer != null) {
         myPort.readBytes(inBuffer);
-        if (inBuffer != null) {
-          for (int i = 0; i < 5; i++) {
-            mainQueue[i] = inBuffer[i];
-          }
-          for (int i = 0; i < 5; i++) {
-            funcQueue[i] = inBuffer[i+6];
-          }
-          myPort.clear();
-          parse(mainQueue, funcQueue);
-          newCommands = true;
+
+        for (int i = 0; i < 5; i++) {
+          mainQueue[i] = inBuffer[i];
         }
+        for (int i = 0; i < 5; i++) {
+          funcQueue[i] = inBuffer[i+6];
+        }
+        myPort.clear();
+        parse(mainQueue, funcQueue);
+        newCommands = true;
       }
     }
   }

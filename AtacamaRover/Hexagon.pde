@@ -5,6 +5,8 @@ class Hexagon { //<>//
   boolean inBounds;
   boolean changed;
   PVector id;
+  boolean occupied = false;
+  Rover occupant;
 
   Hexagon(int hexQ_, int hexR_, int size_) {
     hexQ = hexQ_;
@@ -12,7 +14,7 @@ class Hexagon { //<>//
     int hexX = hexQ;
     int hexZ = hexR;
     int hexY = -hexX - hexZ;
-    
+
     size = size_;
     PVector pixelxy = new PVector();
     pixelxy = hexToPixel(hexQ, hexR);
@@ -22,42 +24,54 @@ class Hexagon { //<>//
     inBounds = true;
     changed = true;
   }
-  
-  PVector getID(){
-   return(id); 
+
+  PVector getID() {
+    return(id);
   }
 
-  void drawHex(color c, int alpha) {
+  void drawHex() {
     //if (inBounds) {
-      pushMatrix();
-      translate(pixelX, pixelY);
+    pushMatrix();
+    translate(pixelX, pixelY);
+    if (this.occupied) {
+      fill(255,100);
+    } else {
+      noFill();
+    }
+    strokeWeight(1);
+    stroke(255);
+    beginShape();
+    for (int i = 0; i <= 360; i +=60) {
+      float theta = radians(i);
+      float cornerX = size * cos(theta);
+      float cornerY = size * sin(theta);
+      vertex(cornerX, cornerY);
+    }
+    endShape();
 
-      fill(c, alpha);
-      strokeWeight(1);
-      stroke(255);
-      beginShape();
-      for (int i = 0; i <= 360; i +=60) {
-        float theta = radians(i);
-        float cornerX = size * cos(theta);
-        float cornerY = size * sin(theta);
-        vertex(cornerX, cornerY);
-      }
-      endShape();
-
-      //      strokeWeight(2);
-      //      stroke(0);
-      //      fill(0);
-      //      String ID = ("(" + hexQ + ", " + hexY + ", " + hexR + ")");
-      //      textSize(8);
-      //      textAlign(CENTER, CENTER);
-      //      text(ID, 0, 0);
-      popMatrix();
+    //      strokeWeight(2);
+    //      stroke(0);
+    //      fill(0);
+    //      String ID = ("(" + hexQ + ", " + hexY + ", " + hexR + ")");
+    //      textSize(8);
+    //      textAlign(CENTER, CENTER);
+    //      text(ID, 0, 0);
+    popMatrix();
     //}
   }
 
   void setState(boolean on) {
     inBounds = on;
     changed = true;
+  }
+
+  void occupy(Rover rover) {
+    occupied = true;
+    occupant = rover;
+  }
+  void vacate() {
+    occupied = false; 
+    occupant = null;
   }
 
   boolean checkMask() {

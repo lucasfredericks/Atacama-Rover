@@ -12,8 +12,12 @@ class Rover { //<>// //<>//
   PVector startLoc;
   boolean inBounds;
   Hexagon hexLoc;
+  Hexagon lastHex;
   Hexagon hexDest;
   int cardinalHeading;
+  int turnMOE = 15; // margin of error for turning in degrees
+
+  int checkCt = 0;
 
   //status variables
   boolean driving, turning, ready, reverse;
@@ -61,34 +65,30 @@ class Rover { //<>// //<>//
       checkProgress();
     }
     displayHeading();
-    colorHex();
-  }
-
-
-  void colorHex() {
-    if (hexLoc != null) {
-      color fillIn = (255);
-      hexLoc.drawHex(fillIn, 200);
-    }
   }
 
   void checkProgress() {
     if (turning) {
-      //println("targetHeading = " + degrees(targetHeading));
-      //println("heading = " + degrees(heading));
+      if (checkCt >0) {
+        turn();
+      }
       float delta = targetHeading - heading;
       //println("delta = " + degrees(delta));
       if (delta < 0) {
         delta += TWO_PI;
       }
-      if (delta < radians(15)) {
+      if (delta < radians(turnMOE)) {
         sendCommand("stop");
-        turning = false;
-        ready = true;
-        if (!driving) {
-          resetVars();
-          queue.complete();
+        if (checkCt >= 5) {
+          turning = false;
+          ready = true;
+          checkCt = 0;
+          if (!driving) {
+            resetVars();
+            queue.complete();
+          }
         }
+        checkCt++;
       }
     } else if (driving) {
       float dist =  PVector.dist(pixelLocation, startLoc);  
@@ -130,8 +130,12 @@ class Rover { //<>// //<>//
       cardinalHeading = 5;
     }
 
-    pixelLocation.set((float)f.getImageLocation().x, (float)f.getImageLocation().y);    
-    hexLoc = hexGrid.getHex(pixelLocation);
+    pixelLocation.set((float)f.getImageLocation().x, (float)f.getImageLocation().y);   
+    hexLoc = hexGrid.pixelToHex((int)pixelLocation.x, (int)pixelLocation.y);
+    if (lastHex != hexLoc) {
+      hexGrid.occupyHex(this, hexLoc, lastHex);
+      lastHex = hexLoc;
+    }
 
 
     //if (hexGrid.getHex(pixelLocation) != null) {
@@ -196,7 +200,7 @@ class Rover { //<>// //<>//
       if (checkDestination(neighbors[cardinalHeading])) {
         driving = true;
         reverse = true; // flip turning directions
-        dest = cardinalHeading;
+        //dest = cardinalHeading;
         setDestination(neighbors[dest]);
       }
     } else if (command == 114) { // 'r' right/clockwise
@@ -243,6 +247,9 @@ class Rover { //<>// //<>//
       float dy = pixelDest.y - pixelLocation.y;
       float dx = pixelDest.x - pixelLocation.x;
       float a = (atan2(dy, dx)+.5*PI);
+      if (reverse) {
+        a += PI;
+      }
       while (a < 0 || a > TWO_PI) {
         if (a < 0) {
           a+= TWO_PI;
@@ -252,9 +259,7 @@ class Rover { //<>// //<>//
         }
       }
       targetHeading = a;
-    }
-    else{
-      
+    } else {
     }
   }
 
@@ -290,12 +295,12 @@ class Rover { //<>// //<>//
     pushMatrix();
     rotate(heading);
     stroke(255, 0, 0);
-    line(0, 0, 0, 50);
+    line(0, 0, 0, -50);
     popMatrix();
     pushMatrix();
     rotate(targetHeading);  
     stroke(0, 255, 0);
-    line(0, 0, 0, 50);
+    line(0, 0, 0, -50);
     popMatrix();
     popMatrix();
     //float a = (atan2(dy, dx));
