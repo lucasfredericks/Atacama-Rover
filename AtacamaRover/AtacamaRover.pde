@@ -32,12 +32,13 @@ void setup() {
   int[] dataIn = new int[4];         // a list to hold data from the serial ports
 
   //Serial port identifiers
-  int readerPort1 = 2;
-  int roverPort1 = 1;
+  int readerPort1 = 1;
+  int roverPort1 = 0;
   String reader1portName = Serial.list()[readerPort1];
   String rover1portName = Serial.list()[roverPort1];
   detector = Boof.fiducialSquareBinaryRobust(0.1);
-  String filePath = ("D:\\Documents\\GitHub\\Atacama-Rover\\AtacamaRover\\data");
+  //String filePath = ("D:\\Documents\\GitHub\\Atacama-Rover\\AtacamaRover\\data");
+  String filePath = ("C:\\Users\\lfredericks\\Documents\\GitHub\\Atacama-Rover\\AtacamaRover\\data");
   CameraPinholeBrown intrinsic = CalibrationIO.load(new File(filePath, "intrinsic.yaml"));
   detector.setIntrinsic(intrinsic);
   //detector.guessCrappyIntrinsic(cam.width, cam.height);
