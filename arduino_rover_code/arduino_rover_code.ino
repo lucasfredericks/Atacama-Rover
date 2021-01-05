@@ -20,9 +20,10 @@ const int dirApin = 12; // The pin controlling the direction of the A motors
 const int dirBpin = 13; // Pin controlling direction of B motors
 const int speedApin = 3; // Pin controlling speed of A motors (via PWM)
 const int speedBpin = 11; // Pin controlling speed of B motors
-const int driveSpeed = 120;
+const int driveSpeed = 255;
 int turnMax = 255;
-int turnMin = 100;
+int turnMin = 255;
+int turnVar;
 
 const int brakeApin = 8;
 const int brakeBpin = 9;
@@ -78,10 +79,11 @@ void detachServos() {
 void servoTurn() {
   turn = true;
   attachServos();
-  servo1.write(75); // 4
-  servo2.write(120); // 5
-  servo3.write(75); // 6
-  servo4.write(100); // 7
+  servo1.write(40); // 4
+  servo2.write(130); // 5
+  servo3.write(60); // 6
+  servo4.write(130); // 7
+  delay(100);
 }
 
 void servoStraight() {
@@ -91,6 +93,7 @@ void servoStraight() {
   servo2.write(10);
   servo3.write(170);
   servo4.write(10);
+  delay(100);
 }
 void backwards() {
 
@@ -102,7 +105,7 @@ void backwards() {
   digitalWrite(dirBpin, LOW);  // Set both motors to forward
   analogWrite(speedApin, driveSpeed);
   analogWrite(speedBpin, driveSpeed);  // Set both motors to drive speed
-  Serial.println(userInput);
+  //Serial.println(userInput);
 }
 
 void forward() {
@@ -114,13 +117,13 @@ void forward() {
   digitalWrite(dirBpin, HIGH);  // Set both motors to backwards
   analogWrite(speedApin, driveSpeed);
   analogWrite(speedBpin, driveSpeed);  // Set both motors to full speed
-  Serial.println(userInput);
+  //Serial.println(userInput);
 }
 
 void turnLeft() {
 
   servoTurn();
-  turnMax = 255;
+  turnVar = turnMax;
   // Turns rover to the left
   digitalWrite(brakeApin, LOW);
   digitalWrite(brakeBpin, LOW);
@@ -128,13 +131,13 @@ void turnLeft() {
   digitalWrite(dirBpin, HIGH);
   analogWrite(speedApin, turnMax);
   analogWrite(speedBpin, turnMax);  // Set both motors to full speed
-  Serial.println(userInput);
+  //Serial.println(userInput);
 }
 
 void turnRight() {
 
   servoTurn();
-  turnMax = 255;
+  turnVar = turnMax;
   digitalWrite(brakeApin, LOW);
   digitalWrite(brakeBpin, LOW);
   // Turns rover to the right
@@ -142,7 +145,7 @@ void turnRight() {
   digitalWrite(dirBpin, LOW);
   analogWrite(speedApin, turnMax);
   analogWrite(speedBpin, turnMax);  // Set both motors to full speed
-  Serial.println(userInput);
+  //Serial.println(userInput);
 
 }
 
@@ -162,7 +165,6 @@ void dontmove() {
   turn = !turn;
   digitalWrite(brakeApin, HIGH);
   digitalWrite(brakeBpin, HIGH);
-  delay(50);
   detachServos();
 }
 
@@ -171,7 +173,7 @@ void loop() {
   // read the incoming byte:
   if (Serial.available()) {
     userInput = Serial.read();
-    //Serial.println(userInput);
+    Serial.println(userInput);
     //    delay(delay_time);
 
 
@@ -199,10 +201,10 @@ void loop() {
       dontmove();
     }
   }
-  if (turn && !stopped && turnMax >= turnMin) { //slow down over the course of the turn to reduce acceleration
-    turnMax -= 20;
-    analogWrite(speedApin, turnMax);
-    analogWrite(speedBpin, turnMax);
+  if (turn && !stopped && turnVar >= turnMin) { //slow down over the course of the turn to reduce acceleration
+    turnVar -= 20;
+    analogWrite(speedApin, turnVar);
+    analogWrite(speedBpin, turnVar);
     delay(1);
 
   }
