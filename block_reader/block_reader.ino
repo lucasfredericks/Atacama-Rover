@@ -14,8 +14,11 @@ int clockPin = 9;
 const byte interruptPin = 3;
 
 volatile boolean button;
-volatile int strokes;
-boolean debug = false;
+unsigned long lastButton;
+int debounce = 500;
+
+boolean debug = true;
+
 
 const int rows = 12;
 uint8_t queue [rows] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -61,7 +64,17 @@ void clearQueue() {
 }
 
 void sendCommand() {
-  Serial.write(queue, rows);
+  if (debug) {
+        for (int i = 0; i < rows; i++) {
+          Serial.print(i);
+          Serial.print(" = ");
+          Serial.println(queue[i]);
+        }
+    Serial.println("~~~~~~~~~~~~~~~~~~~~~~");
+  }
+  else {
+    Serial.write(queue, rows);
+  }
 }
 
 void shiftIn() {
@@ -96,17 +109,23 @@ void shiftIn() {
     }
     uint8_t rightNibble = tempByte & rightCompare;   // bitwise AND with 00001111 to extract the second nibble into its own byte
     uint8_t leftNibble = tempByte >> 4;              // bitshift right to extract the first nibble into its own byte
-    queue[j] = commandLookup[rightNibble];
-    queue[j + 1] = commandLookup[leftNibble];
-    if (debug) {
-      Serial.println (leftNibble, BIN);
-      Serial.println(rightNibble, BIN);
-    }
+    queue[j] = commandLookup[leftNibble];
+    queue[j + 1] = commandLookup[rightNibble];
 
   }
   uint8_t interesting = 16;
-  queue[11] = interesting; //block 12 is an endbyte
+  queue[11] = interesting; //last byte is an endbyte
 }
+
+void buttonPress() {
+  if (millis() - lastButton >= debounce) {
+
+    detachInterrupt(digitalPinToInterrupt(interruptPin));
+    button = true;
+    lastButton = millis();
+  }
+}
+
 void setup() {
   //start serial
   Serial.begin(115200);
@@ -117,25 +136,21 @@ void setup() {
   pinMode(dataPin, INPUT);
   pinMode(interruptPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(interruptPin), buttonPress, FALLING);
-
   button = false;
+  lastButton = millis();
   clearQueue();
 }
 
-void buttonPress() {
-  detachInterrupt(digitalPinToInterrupt(interruptPin));
-  button = true;
 
-  delay(20);
-  attachInterrupt(digitalPinToInterrupt(interruptPin), buttonPress, FALLING);
-}
 void loop() {
 
   if (button) {
-    button = false;
     clearQueue();
     shiftIn();
     delay(10);
     sendCommand();
+    button = false;
+    EIFR = 0x01; //clears INTO interrupt flag
+    attachInterrupt(digitalPinToInterrupt(interruptPin), buttonPress, FALLING);
   }
 }
