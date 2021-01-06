@@ -16,7 +16,7 @@ Rover rover1;
 int rover1ID = 6; // the fiducial binary identifier for rover 1
 
 HexGrid hexGrid;
-int hexSize = 60;
+int hexSize = 100;
 
 color bg = color(0, 0, 0, 0);
 color hover = color(255);
@@ -25,7 +25,7 @@ color hover = color(255);
 
 void setup() {
   initializeCamera(640, 480);
-  surface.setSize(cam.width, cam.height);
+  surface.setSize(640, 480);
   //frameRate(30);
 
   Serial[] myPorts = new Serial[4];  // Create a list of objects from Serial class
@@ -38,7 +38,8 @@ void setup() {
   String rover1portName = Serial.list()[roverPort1];
   detector = Boof.fiducialSquareBinaryRobust(0.1);
   //String filePath = ("D:\\Documents\\GitHub\\Atacama-Rover\\AtacamaRover\\data");
-  String filePath = ("C:\\Users\\lfredericks\\Documents\\GitHub\\Atacama-Rover\\AtacamaRover\\data");
+  //String filePath = ("C:\\Users\\lfredericks\\Documents\\GitHub\\Atacama-Rover\\AtacamaRover\\data");
+  String filePath = ("C:\\Users\\Lucas\\Documents\\GitHub\\Atacama-Rover\\AtacamaRover\\data");
   CameraPinholeBrown intrinsic = CalibrationIO.load(new File(filePath, "intrinsic.yaml"));
   detector.setIntrinsic(intrinsic);
   //detector.guessCrappyIntrinsic(cam.width, cam.height);
@@ -53,7 +54,9 @@ void setup() {
 void draw() {
 
   //println(frameRate);
-
+  if (frameCount%30==0) {
+    //println(frameRate);
+  }
   if (cam.available() == true) {
     cam.read();
 
@@ -81,14 +84,14 @@ void draw() {
       //detector.render(this, f);
     }
 
-
+    image(cam, 0, 0);
     //arena.drawCorners();
     hexGrid.update();
 
     rover1.run();
     //rover1.debug();
 
-    image(cam, 0, 0);
+
     hexGrid.display();
     fill(0, 255, 0);
     ellipse(rover1.pixelLocation.x, rover1.pixelLocation.y, 10, 10);
@@ -115,7 +118,7 @@ void initializeCamera( int desiredWidth, int desiredHeight ) {
     println("There are no cameras available for capture.");
     exit();
   } else {
-    cam = new Capture(this, desiredWidth, desiredHeight);
+    cam = new Capture(this, desiredWidth, desiredHeight, cameras[1]);
     cam.start();
   }
 }

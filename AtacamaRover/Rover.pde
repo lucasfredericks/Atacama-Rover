@@ -1,4 +1,4 @@
-class Rover { //<>// //<>//
+class Rover { //<>// //<>// //<>// //<>//
   Serial myPort;
   PApplet sketch;
   HexGrid hexGrid;
@@ -6,8 +6,8 @@ class Rover { //<>// //<>//
   DMatrixRMaj rMatrix;
   PVector pixelLocation;
   double[] euler;
-  float heading;
-  float targetHeading;
+  float heading = 0;
+  float targetHeading = 0;
   PVector pixelDest;
   PVector startLoc;
   boolean inBounds;
@@ -16,8 +16,13 @@ class Rover { //<>// //<>//
   Hexagon hexDest;
   int cardinalHeading;
   int turnMOE = 15; // margin of error for turning in degrees
+  String command;
+  String lastCommand;
 
-  int checkCt = 0;
+  int watchDog = 0;
+
+
+  int checkCt;
 
   //status variables
   boolean driving, turning, ready, reverse;
@@ -34,15 +39,12 @@ class Rover { //<>// //<>//
     queue = new Queue(sketch, this, queueSerial);
   }
 
-  void debug() {
-    parseCommand((byte) 'f');
-    displayHeading();
-  }
   void resetVars() {
-    sendCommand("stop");
+    command = "stop";
     turning = false;
     driving = false;
     ready = true;
+    checkCt = 0;
   }
 
   void run() {
@@ -51,59 +53,31 @@ class Rover { //<>// //<>//
     if (queue.checkNew()) { //if the user has pressed the button, stop the current command
       resetVars();
     }
-    if (ready) {
-      if (turning) {
-        turn();
-      } else if (driving) {
-        drive();
-      } else if (queue.checkNext()) {
-        byte command = queue.getNext();
-        parseCommand(command);
-        ready = true;
-      }
+    if (watchDog > 5) {
+      command = "stop";
+      println("watchdog");
     } else {
-      checkProgress();
+      if (ready) {
+        if (turning) {
+          turn();
+        } else if (driving) {
+          drive();
+        } else if (queue.checkNext()) {
+          byte command_ = queue.getNext();
+          parseCommand(command_);
+          ready = true;
+        }
+      }
     }
+    if (command!=lastCommand) {
+      sendCommand();
+    }
+    watchDog++;
     displayHeading();
   }
 
-  void checkProgress() {
-    if (turning) {
-      if (checkCt >0) {
-        turn();
-      }
-      float delta = targetHeading - heading;
-      //println("delta = " + degrees(delta));
-      if (delta < 0) {
-        delta += TWO_PI;
-      }
-      if (delta < radians(turnMOE)) {
-        sendCommand("stop");
-        if (checkCt >= 5) {
-          turning = false;
-          ready = true;
-          checkCt = 0;
-          if (!driving) {
-            resetVars();
-            queue.complete();
-          }
-        }
-        checkCt++;
-      }
-    } else if (driving) {
-      float dist =  PVector.dist(pixelLocation, startLoc);  
-      float targetDist = PVector.dist(startLoc, pixelDest);
-      //println("dist: " + dist);
-      //println("targetDist: " +targetDist);
-      if (abs(dist) >= abs(targetDist)-20) {
-        sendCommand("stop");
-        queue.complete();
-        resetVars();
-      }
-    }
-  }
-
   void updateLocation(FiducialFound f) {
+    watchDog = 0;
     rMatrix.set(f.getFiducialToCamera().getR());
     //detector.render(sketch, f);
     euler = ConvertRotation3D_F64.matrixToEuler(rMatrix, EulerType.XYZ, (double[])null);
@@ -137,14 +111,11 @@ class Rover { //<>// //<>//
       lastHex = hexLoc;
     }
 
-
-    //if (hexGrid.getHex(pixelLocation) != null) {
-    //  hexLoc = hexGrid.getHex(pixelLocation);
-    //}
+    checkProgress();
   }
 
+
   void turn() {
-    byte command;
     float ldelta;
     float rdelta;
     //if (!reverse) { 
@@ -162,68 +133,97 @@ class Rover { //<>// //<>//
       rdelta += TWO_PI;
     }
     if (ldelta < rdelta) {
-      command = 'l';
+      command = "left";
     } else {
-      command = 'r';
+      command = "right";
     }
-    sendCommand(command);
     ready = false;
+  }
+  void checkProgress() {
+    if (turning) {
+      turn();
+      float delta = targetHeading - heading;
+      //println("delta = " + degrees(delta));
+      //if (delta < 0) {
+      //  delta += TWO_PI;
+      //}
+      if (abs(delta) < radians(turnMOE)) {
+        command = "stop";
+        checkCt++;
+        println(checkCt);
+        if (checkCt >= 2) {
+          turning = false;
+          ready = true;
+          checkCt = 0;
+          if (!driving) {
+            resetVars();
+            queue.complete();
+          }
+        }
+      }
+    } else if (driving) {
+      float dist =  PVector.dist(pixelLocation, startLoc);  
+      float targetDist = PVector.dist(startLoc, pixelDest);
+      //println("dist: " + dist);
+      //println("targetDist: " +targetDist);
+      if (abs(dist) >= abs(targetDist)-5) {
+        command = "stop";
+        queue.complete();
+        resetVars();
+      }
+    }
   }
 
   void drive() {
     if (reverse) {
-      sendCommand((byte) 'b');
+      command = "back";
     } else {
-      sendCommand((byte) 'f');
+      command = "forward";
     }
     ready = false;
   }
 
-  void parseCommand(byte command) {
+  void parseCommand(byte command_) {
     hexLoc = hexGrid.pixelToHex((int)pixelLocation.x, (int)pixelLocation.y);
     Hexagon[] neighbors = hexGrid.getNeighbors(hexLoc);
     int dest;
     turning = true; // Each command starts with an alignment turn
     // convert relative commands to absolute
-    if (command == 102) {  // 'f' forward
+    if (command_ == 102) {  // 'f' forward
       dest = cardinalHeading;
       if (checkDestination(neighbors[dest])) {
         driving = true;
         reverse = false;
         setDestination(neighbors[dest]);
       }
-    } else if (command == 98) { // 'b' back
+    } else if (command_ == 98) { // 'b' back
       dest = cardinalHeading + 3;
       if (dest > 5) {
         dest -= 6;
       }
-      if (checkDestination(neighbors[cardinalHeading])) {
+      if (checkDestination(neighbors[dest])) {
         driving = true;
         reverse = true; // flip turning directions
         //dest = cardinalHeading;
         setDestination(neighbors[dest]);
       }
-    } else if (command == 114) { // 'r' right/clockwise
+    } else if (command_ == 114) { // 'r' right/clockwise
 
       dest = cardinalHeading + 1;
       if (dest > 5) {
         dest -= 6;
       }
-      if (checkDestination(neighbors[dest])) {
-        driving = false;
-        reverse = false;
-        setDestination(neighbors[dest]);
-      }
-    } else if (command == 108) { // 'l' counterclockwise
+      driving = false;
+      reverse = false;
+      setDestination(neighbors[dest]);
+    } else if (command_ == 108) { // 'l' counterclockwise
       dest = cardinalHeading -1;
       if (dest < 0) {
         dest += 6;
       }
-      if (checkDestination(neighbors[dest])) {
-        driving = false;
-        reverse = false;
-        setDestination(neighbors[dest]);
-      }
+      driving = false;
+      reverse = false;
+      setDestination(neighbors[dest]);
     }
   }
 
@@ -232,7 +232,6 @@ class Rover { //<>// //<>//
     if (h != null && h.inBounds) {
       return true;
     } else {
-      sendCommand("stop");
       resetVars();
       return false;
     }
@@ -264,27 +263,30 @@ class Rover { //<>// //<>//
   }
 
 
-  void sendCommand(String command) {
-    byte commandByte = ' '; //invalid command will default to 'stop'
-    if (command == "stop") {
-      commandByte = ' ';
-    } else if (command == "left") {
-      commandByte = 'l';
-    } else if (command == "right") {
-      commandByte = 'r';
-    } else if (command == "forward") {
-      commandByte = 'f';
-    } else if (command == "back") {
-      commandByte = 'b';
+  void sendCommand() {
+    if (command != lastCommand) {
+      byte commandByte = ' '; //invalid command will default to 'stop'
+      if (command == "stop") {
+        commandByte = ' ';
+      } else if (command == "left") {
+        commandByte = 'l';
+      } else if (command == "right") {
+        commandByte = 'r';
+      } else if (command == "forward") {
+        commandByte = 'f';
+      } else if (command == "back") {
+        commandByte = 'b';
+      }
+      println(command);
+      myPort.write(commandByte);
     }
-    println(commandByte);
-    myPort.write(commandByte);
+    lastCommand = command;
   }
 
-  void sendCommand(byte command) { //if the command is  a byte, send it to the rover
-    myPort.write(command);
-    println(command);
-  }
+  //void sendCommand(byte command) { //if the command is  a byte, send it to the rover
+  //  myPort.write(command);
+  //  println(command);
+  //}
 
   void displayHeading() {
     pushMatrix();

@@ -11,7 +11,7 @@ class HexGrid {
   HashMap<PVector, Hexagon> allHexes;
   Arena arena;
   PVector[] neighbors;
-  int qMin = 1; //the q axis corresponds to the x axis on the screen. Higher values are further right
+  int qMin = -1; //the q axis corresponds to the x axis on the screen. Higher values are further right
   int qMax = 30;
   int rMin = -13; //the r axis is 30 degrees counterclockwise to the q/x axis. Higher values are down and to the left
   int rMax = 13;
@@ -40,7 +40,7 @@ class HexGrid {
       for (int r = rMin; r <= rMax; r++) {
         int y = -q - r;
         PVector loc = (hexToPixel(q, r));
-        if (loc.x > 0 && loc.x < width && loc.y > 0 && loc.y < height) {
+        if (loc.x > -hexSize && loc.x < width+hexSize && loc.y > 0-hexSize && loc.y < height+hexSize) {
           PVector hexID = new PVector(q, y, r);
           Hexagon h = new Hexagon(q, r, hexSize);
           allHexes.put(hexID, h);
