@@ -11,13 +11,14 @@
 int latchPin = 8;
 int dataPin = 10;
 int clockPin = 9;
+int debugPin = 5;
 const byte interruptPin = 3;
 
 volatile boolean button;
 unsigned long lastButton;
-int debounce = 500;
+int debounce = 500; //milli time comparison to debounce button
 
-boolean debug = true;
+boolean debug = false;
 
 
 const int rows = 12;
@@ -119,8 +120,6 @@ void shiftIn() {
 
 void buttonPress() {
   if (millis() - lastButton >= debounce) {
-
-    detachInterrupt(digitalPinToInterrupt(interruptPin));
     button = true;
     lastButton = millis();
   }
@@ -133,6 +132,7 @@ void setup() {
   //define pin modes
   pinMode(latchPin, OUTPUT);
   pinMode(clockPin, OUTPUT);
+  pinMode(debugPin, INPUT_PULLUP);
   pinMode(dataPin, INPUT);
   pinMode(interruptPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(interruptPin), buttonPress, FALLING);
@@ -143,6 +143,7 @@ void setup() {
 
 
 void loop() {
+  debug = !digitalRead(debugPin);
 
   if (button) {
     clearQueue();
@@ -150,7 +151,6 @@ void loop() {
     delay(10);
     sendCommand();
     button = false;
-    EIFR = 0x01; //clears INTO interrupt flag
-    attachInterrupt(digitalPinToInterrupt(interruptPin), buttonPress, FALLING);
+    
   }
 }
