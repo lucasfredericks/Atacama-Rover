@@ -24,8 +24,13 @@ color hover = color(255);
 
 
 void setup() {
-  initializeCamera(640, 480);
-  surface.setSize(640, 480);
+  frameRate(30);
+  String[] cameras = Capture.list();
+  println(Capture.list());
+  cam = new Capture(this, 1280, 720, cameras[0]);
+  cam.start();
+
+  surface.setSize(cam.width, cam.height);
   //frameRate(30);
 
   Serial[] myPorts = new Serial[4];  // Create a list of objects from Serial class
@@ -54,8 +59,8 @@ void setup() {
 void draw() {
 
   //println(frameRate);
-  if (frameCount%30==0) {
-    //println(frameRate);
+  if (frameCount%120==0) {
+   // println(frameRate);
   }
   if (cam.available() == true) {
     cam.read();
@@ -108,17 +113,3 @@ void draw() {
 //  int y = -x-z;
 
 //}
-
-
-
-void initializeCamera( int desiredWidth, int desiredHeight ) {
-  String[] cameras = Capture.list();
-
-  if (cameras.length == 0) {
-    println("There are no cameras available for capture.");
-    exit();
-  } else {
-    cam = new Capture(this, desiredWidth, desiredHeight, cameras[1]);
-    cam.start();
-  }
-}

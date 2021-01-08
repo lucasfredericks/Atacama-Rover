@@ -15,9 +15,11 @@ class Rover { //<>// //<>// //<>// //<>//
   Hexagon lastHex;
   Hexagon hexDest;
   int cardinalHeading;
-  int turnMOE = 15; // margin of error for turning in degrees
+  int turnMOE = 10; // margin of error for turning in degrees
   String command;
   String lastCommand;
+  long nudgeTimer;
+  int nudgeTimeout = 100;
 
   int watchDog = 0;
 
@@ -113,7 +115,34 @@ class Rover { //<>// //<>// //<>// //<>//
 
     checkProgress();
   }
+  void nudge() {
+    float ldelta;
+    float rdelta;
+    //if (!reverse) { 
+    ldelta = heading - targetHeading;
+    rdelta = targetHeading - heading;
+    //} else {
+    //  ldelta = targetHeading - heading; //invert steering when in reverse;
+    //  rdelta = heading - targetHeading;
+    //}
+    if (millis() - nudgeTimer > nudgeTimeout) {
+      nudgeTimer = millis();
 
+      if (ldelta < 0) {
+        ldelta += TWO_PI;
+      }
+      if (rdelta < 0) {
+        rdelta += TWO_PI;
+      }
+      if (ldelta < rdelta) {
+        command = "nleft";
+      } else if (rdelta > ldelta) {
+        command = "nright";
+      }
+      checkCt++; //<>//
+      println(checkCt);
+    }
+  }
 
   void turn() {
     float ldelta;
@@ -140,8 +169,8 @@ class Rover { //<>// //<>// //<>// //<>//
     ready = false;
   }
   void checkProgress() {
+    float nudgeMOE = radians(5);
     if (turning) {
-      turn();
       float delta = targetHeading - heading;
       //println("delta = " + degrees(delta));
       //if (delta < 0) {
@@ -149,9 +178,9 @@ class Rover { //<>// //<>// //<>// //<>//
       //}
       if (abs(delta) < radians(turnMOE)) {
         command = "stop";
-        checkCt++;
-        println(checkCt);
-        if (checkCt >= 2) {
+        if (abs(delta) > radians(nudgeMOE) || checkCt <=5) {
+          nudge();
+        } else {
           turning = false;
           ready = true;
           checkCt = 0;
@@ -264,8 +293,13 @@ class Rover { //<>// //<>// //<>// //<>//
 
 
   void sendCommand() {
-    if (command != lastCommand) {
-      byte commandByte = ' '; //invalid command will default to 'stop'
+    byte commandByte = ' '; //invalid command will default to 'stop'
+    if (command == "nright") {
+      commandByte = 'd'; //nudge right
+    } else if (command == "nleft") {
+      commandByte = 'a'; //nudge left
+    } else if (command != lastCommand) {
+
       if (command == "stop") {
         commandByte = ' ';
       } else if (command == "left") {
@@ -277,11 +311,30 @@ class Rover { //<>// //<>// //<>// //<>//
       } else if (command == "back") {
         commandByte = 'b';
       }
-      println(command);
-      myPort.write(commandByte);
     }
+
+    println(command);
+    myPort.write(commandByte);
+
     lastCommand = command;
   }
+
+  //void sendCommand(String cmnd) {
+  //  byte commandByte = ' '; //invalid command will default to 'stop'
+  //  if (command == "stop") {
+  //    commandByte = ' ';
+  //  } else if (cmnd == "left") {
+  //    commandByte = 'l';
+  //  } else if (cmnd == "right") {
+  //    commandByte = 'r';
+  //  } else if (cmnd == "forward") {
+  //    commandByte = 'f';
+  //  } else if (cmnd == "back") {
+  //    commandByte = 'b';
+  //  }
+  //  lastCommand = cmnd;
+  //}
+
 
   //void sendCommand(byte command) { //if the command is  a byte, send it to the rover
   //  myPort.write(command);

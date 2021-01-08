@@ -3,18 +3,18 @@
 # radial = radial distortion, (t1,t2) = tangential distortion
 
 pinhole:
-  fx: 931.3922076926772
-  fy: 930.4878819805117
-  cx: 645.5071091980926
-  cy: 355.94196574418
-  width: 1280
-  height: 720
+  fx: 659.0214875386948
+  fy: 658.4499186466925
+  cx: 311.49718801930567
+  cy: 244.76611816819522
+  width: 640
+  height: 480
   skew: 0.0
 model: pinhole_radial_tangential
 radial_tangential:
   radial:
-  - 0.07758538977407703
-  - -0.13547151337858043
-  t1: -4.938946984128678E-4
-  t2: -8.231791576788564E-5
+  - -0.09156282081123754
+  - 0.08676537818769589
+  t1: 0.0
+  t2: 0.0
 version: 0
