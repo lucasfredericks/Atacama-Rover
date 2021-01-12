@@ -30,12 +30,14 @@ const int dirApin = 12; // The pin controlling the direction of the A motors
 const int dirBpin = 13; // Pin controlling direction of B motors
 const int speedApin = 3; // Pin controlling speed of A motors (via PWM)
 const int speedBpin = 11; // Pin controlling speed of B motors
-const int driveSpeed = 200;
+const int driveSpeed = 150;
 int turnMax = 150;
 int turnMin = 120;
 int turnVar;
 const int brakeApin = 8;
 const int brakeBpin = 9;
+
+boolean input = false;
 
 void attachServos() {
   if (!servo1.attached()) {
@@ -169,6 +171,13 @@ void drive() {
   lastInput = userInput;
 }
 
+void handshake() {
+  if (input) {
+    Serial.println(userInput);
+    input = false;
+  }
+}
+
 void setup() {
   pinMode(dirApin, OUTPUT);
   pinMode(dirBpin, OUTPUT);
@@ -191,14 +200,16 @@ void loop() {
 
   // read the incoming byte:
   if (Serial.available()) {
+    input = true;
     userInput = Serial.read();
-    Serial.println(userInput);
+    //Serial.println(userInput);
     delay(5);
 
     if (userInput == 119) { // ACSCII 'w' move forward
       stopped = false;
       nudging = false;
       initForward();
+      handshake();
     }
     else if (userInput == 87) {  // ASCII 'W' nudge forward
       stopped = false;
@@ -210,6 +221,7 @@ void loop() {
       stopped = false;
       nudging = false;
       initLeft();
+      handshake();
     }
     else if (userInput == 65) {   //ASCII 'A' nudge left
       stopped = false;
@@ -221,6 +233,7 @@ void loop() {
       stopped = false;
       nudging = false;
       initReverse();
+      handshake();
     }
     else if (userInput == 83) {  // ASCII 'S' nudge backward
       stopped = false;
@@ -232,6 +245,7 @@ void loop() {
       stopped = false;
       nudging = false;
       initRight();
+      handshake();
     }
     else if (userInput == 68) { //ascii 'D' nudge right
       stopped = false;
@@ -242,11 +256,13 @@ void loop() {
     }
     else if (userInput == 32) { //space
       stopped = true;
+      handshake();
     }
   }
 
   if (stopped == true) {
     dontmove();
+    handshake();
   }
   else {
     if (waitServos) { //check whether servos had to turn
@@ -258,17 +274,24 @@ void loop() {
       }
     }
     else {
-      drive();
+
       if (nudging) { // if not waiting for servos to turn
+        drive();
         if (millis() - nudgeTimer > nudgeTimeout) {
           nudging = false;
           stopped = true;
           lastInput = 0; //allow repeat nudges
+          handshake();
         }
+      } else {
+        drive();
+        //Serial.println("drive");
+        //handshake();
       }
     }
   }
 }
+
 //  if (turn && !stopped && turnVar >= turnMin) { //slow down over the course of the turn to reduce acceleration
 //    turnVar -= 20;
 //    analogWrite(speedApin, turnVar);

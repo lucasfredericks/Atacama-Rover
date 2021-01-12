@@ -26,7 +26,7 @@ color hover = color(255);
 void setup() {
         frameRate(30);
         String[] cameras = Capture.list();
-        println(Capture.list()); //<>//
+        println(Capture.list());
         cam = new Capture(this, 1280, 720, cameras[1]);
         cam.start();
 

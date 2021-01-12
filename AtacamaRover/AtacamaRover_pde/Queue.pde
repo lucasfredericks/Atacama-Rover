@@ -103,17 +103,23 @@ class Queue {
         drive = true;
         cardinalHeading += 1;
       }
-      if (cardinalHeading<0) {
-        cardinalHeading +=6;
+
+      while (cardinalHeading < 0 || cardinalHeading >= 6) {
+        if (cardinalHeading<0) {
+          cardinalHeading +=6;
+        }
+        if (cardinalHeading >= 6) {
+          cardinalHeading-=6;
+        }
       }
-      if (cardinalHeading > 6) {
-        cardinalHeading-=6;
-      }
+      hexKey.add(hexGrid.neighbors[cardinalHeading]);
+      Hexagon h = hexGrid.getHex(hexKey);
       if (drive) {
-        hexKey.add(hexGrid.neighbors[cardinalHeading]);
-        hexDestList.add(hexGrid.getHex(hexKey));
-        //println("drive");
+        hexDestList.add(h);
         drive = false;
+        //} else {
+        //  //println("drive");
+        //}
       }
     }
   }
@@ -140,6 +146,12 @@ class Queue {
       return false;
     } else {
       return true;
+    }
+  }
+
+  void turnComplete() {
+    if (!hexDestList.isEmpty()) {
+      hexDestList.remove(0);
     }
   }
 
