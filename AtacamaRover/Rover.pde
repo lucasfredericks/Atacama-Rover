@@ -1,4 +1,4 @@
-class Rover { //<>// //<>// //<>// //<>// //<>// //<>//
+class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
   Serial myPort;
   PApplet sketch;
   HexGrid hexGrid;
@@ -7,8 +7,6 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>//
   double[] euler;
   float heading = 0;
   float targetHeading = 0;
-  float ldelta = 0;
-  float rdelta = 0;
   float dist = 0;
   PVector destination;
   PVector location;
@@ -18,13 +16,14 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>//
   String command;
   String lastCommand;
 
+
   int watchDog = 0;
 
 
   int checkCt;
 
   //status variables
-  boolean done, handshake, ready;
+  boolean handshake; // tracks acknowldgement from rover
 
   Rover(HexGrid hexGrid_, PApplet sketch_, String serial, String queueSerial) {
     sketch = sketch_;
@@ -44,7 +43,6 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>//
 
   void resetVars() {
     command = "stop";
-    ready = true;
     checkCt = 0;
     handshake = true;
   }
@@ -59,7 +57,8 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>//
       command = "stop";
       myPort.write(' ');
       println("watchdog");
-    } else {
+    } else if (handshake) {
+      handshake = false;
       sendCommand();
     }
     if (myPort.available()>0) {
@@ -75,71 +74,50 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>//
     //detector.render(sketch, f);
     euler = ConvertRotation3D_F64.matrixToEuler(rMatrix, EulerType.XYZ, (double[])null);
     heading = (float) euler[2]; // - .5*PI;
-    while (heading < 0 || heading > TWO_PI) {
-      if (heading < 0) {
-        heading+= TWO_PI;
-      }
-      if (heading > TWO_PI) {
-        heading -= TWO_PI;
-      }
-    }
+    heading = normalizeRadians(heading);
 
 
     location.set((float)f.getImageLocation().x, (float)f.getImageLocation().y);
-    dist =  PVector.dist(location, destination);
-    float dy = destination.y - location.y;
-    float dx = destination.x - location.x;
-    float destHeading = (atan2(dy, dx)+.5*PI);
-    while (destHeading < 0 || destHeading > TWO_PI) {
-      if (destHeading < 0) {
-        destHeading += TWO_PI;
-      }
-      if (destHeading > TWO_PI) {
-        destHeading -= TWO_PI;
-      }
-    }
-    ldelta = heading - destHeading;
-    rdelta = destHeading - heading;
-    if (ldelta < 0) {
-      ldelta += TWO_PI;
-    }
-    if (rdelta < 0) {
-      rdelta += TWO_PI;
-    }
+    queue.updateLocation(location);
     drive();
   }
-  void drive(float orientation, float distance) {
-    boolean turnBool = false;
+  void drive() {
+    boolean turnBool = false; //boolean variables for wayfinding while driving (not about status of the current rovercommand)
     boolean nudgeTurnBool = false;
     boolean driveBool = false;
     boolean nudgeDriveBool = false;
 
-    if (ready) {
-      if (queue.checkNext()) {
-        destination = hexGrid.getXY(queue.getNext());
-        ready = false;
-        //println(destination);
-      }
-    }
+    if (queue.isActiveCommand()) {
+      targetHeading = queue.getHeading(); //
+      targetHeading = normalizeRadians(targetHeading);
+      float ldelta = heading - targetHeading;
+      float rdelta = targetHeading - heading;
+      ldelta = normalizeRadians(ldelta);
+      rdelta = normalizeRadians(rdelta);
 
-    if (min(abs(ldelta), abs(rdelta))>turnMOE) {
-      nudgeTurnBool = false;
-      turnBool = true;
-    } else if (min(abs(ldelta), abs(rdelta))>nudgeMOE) {
-      nudgeTurnBool = true;
-      turnBool = true;
-    } else { 
-      nudgeTurnBool = false;
-      turnBool = false;
-    }
-    if (abs(dist) >= hexSize) {
-      driveBool = true;
-      nudgeDriveBool = false;
-    } else if (abs(dist) >= hexSize/4) {
-      driveBool = false;
-      nudgeDriveBool = true;
-    }
-    if (!ready) {
+      destination = queue.getDestination();
+      dist = queue.compareDistances(destination);
+      println(dist);
+
+      //set drive/turn variables
+      if (min(abs(ldelta), abs(rdelta))>turnMOE) { //do coarse turning first
+        nudgeTurnBool = false;
+        turnBool = true;
+      } else if (min(abs(ldelta), abs(rdelta))>nudgeMOE) { //otherwise do fine turning
+        nudgeTurnBool = true;
+        turnBool = true;
+      } else { //otherwise the rover is facing in the correct direction
+        nudgeTurnBool = false;
+        turnBool = false;
+      }
+      if (dist >= 2*hexSize) { //coarse driving
+        driveBool = true;
+        nudgeDriveBool = false;
+      } else if (dist >= hexSize/4) { //fine driving
+        driveBool = false;
+        nudgeDriveBool = true;
+      } 
+
       if (nudgeTurnBool) {
         if (abs(ldelta)<abs(rdelta)) {
           command = "nleft";
@@ -157,11 +135,26 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>//
       } else if (driveBool) {
         command = "forward";
       } else {
-        resetVars();
+        if (checkCt > 0) {
+          queue.moveComplete();
+          resetVars();
+        }
+        else{checkCt++;}
       }
     }
   }
 
+  float normalizeRadians(float theta) {
+    while (theta < 0 || theta > TWO_PI) {
+      if (theta < 0) {
+        theta += TWO_PI;
+      }
+      if (theta > TWO_PI) {
+        theta -= TWO_PI;
+      }
+    }
+    return theta;
+  }
   void sendCommand() {
     byte commandByte = ' ';         //invalid command will default to 'stop'
     if (command == "nright") {
@@ -180,11 +173,10 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>//
       commandByte = 'W';
     }
 
-    if (handshake) {
-      handshake = false;
+    if (commandByte == 'W'||commandByte == 'A'||commandByte == 'S'||commandByte == 'D'|| command!= lastCommand) {
       myPort.write(commandByte);
       lastCommand = command;
-      //println(command);
+      println(command);
     }
   }
   void displayHeading() {

@@ -33,14 +33,7 @@ void setup() {
         surface.setSize(cam.width, cam.height);
         //frameRate(30);
 
-        Serial[] myPorts = new Serial[4]; // Create a list of objects from Serial class
-        int[] dataIn = new int[4];   // a list to hold data from the serial ports
 
-        //Serial port identifiers
-        int readerPort1 = 1;
-        int roverPort1 = 0;
-        String reader1portName = Serial.list()[readerPort1];
-        String rover1portName = Serial.list()[roverPort1];
         detector = Boof.fiducialSquareBinaryRobust(0.1);
         //String filePath = ("D:\\Documents\\GitHub\\Atacama-Rover\\AtacamaRover\\data");
         //String filePath = ("C:\\Users\\lfredericks\\Documents\\GitHub\\Atacama-Rover\\AtacamaRover\\data");
@@ -51,9 +44,9 @@ void setup() {
         arena = new Arena();
 
         hexGrid = new HexGrid(hexSize);
+        
 
 
-        rover1 = new Rover(hexGrid, this, rover1portName, reader1portName);
 }
 
 void draw() {
@@ -101,7 +94,7 @@ void draw() {
                 fill(0, 255, 0);
                 ellipse(rover1.location.x, rover1.location.y, 10, 10);
 
-                //fill(255, 0, 0);
-                //ellipse(constrain(rover1.destination.x, 0, width), constrain(rover1.destination.y, 0, height), 20, 20);
+                fill(255, 0, 0);
+                ellipse(constrain(rover1.destination.x, 0, width), constrain(rover1.destination.y, 0, height), 20, 20);
         }
 }

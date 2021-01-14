@@ -7,7 +7,6 @@ class Hexagon { //<>//
   PVector id;
   PVector pixelxy;
   boolean occupied = false;
-  boolean fillin = false;
   Rover occupant;
 
   Hexagon(int hexQ_, int hexR_, int size_) {
@@ -35,7 +34,7 @@ class Hexagon { //<>//
     //if (inBounds) {
     pushMatrix();
     translate(pixelX, pixelY);
-    if (this.occupied || this.fillin) {
+    if (this.occupied) {
       fill(255, 100);
     } else {
       noFill();
