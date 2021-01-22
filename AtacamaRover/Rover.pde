@@ -1,7 +1,7 @@
 class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
   Serial myPort;
   PApplet sketch;
-  HexGrid hexGrid;
+  Hexgrid hexgrid;
   Queue queue;
   DMatrixRMaj rMatrix;
   double[] euler;
@@ -11,23 +11,23 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
   PVector destination;
   PVector location;
   boolean inBounds;
-  float turnMOE = 60;   // margin of error for turning in degrees
+  float turnMOE = 60;     // margin of error for turning in degrees
   float nudgeMOE = 10;
   String command;
   String lastCommand;
 
 
-  int watchDog = 0;
+  int watchdog;
 
 
   int checkCt;
 
   //status variables
-  boolean handshake; // tracks acknowldgement from rover
+  boolean handshake;   // tracks acknowldgement from rover
 
-  Rover(HexGrid hexGrid_, PApplet sketch_, String serial, String queueSerial) {
+  Rover(Hexgrid hexgrid_, PApplet sketch_, String serial) {
     sketch = sketch_;
-    hexGrid = hexGrid_;
+    hexgrid = hexgrid_;
     rMatrix = new DMatrixRMaj();
     location = new PVector();
     destination = new PVector();
@@ -35,12 +35,14 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
     myPort = new Serial(sketch, serial, 9600);
     destination = new PVector(.5*width, .5*height);
     location = new PVector();
-    queue = new Queue(sketch, this, queueSerial);
     turnMOE = radians(turnMOE);
     nudgeMOE = radians(nudgeMOE);
     handshake = true;
+    watchdog = 6; //set watchdog high, so nothing will happen until the rover is located at least once
   }
-
+  void initQueue(Queue queue_) {
+    queue = queue_;
+  }
   void resetVars() {
     command = "stop";
     checkCt = 0;
@@ -49,27 +51,31 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
 
   void run() {
 
-    queue.update();
-    if (queue.checkNew()) { //if the user has pressed the button, stop the current command
-      resetVars();
-    }
-    if (watchDog > 5) {
+    if (watchdog <= 5) {
+
+      if (queue.checkNew()) { //if the user has pressed the button, stop the current command
+        resetVars();
+      }
+      watchdog++;
+      //displayHeading();
+    } else {
       command = "stop";
-      myPort.write(' ');
-      println("watchdog");
-    } else if (handshake) {
-      handshake = false;
-      sendCommand();
-    }
+    }    
     if (myPort.available()>0) {
       handshake = true;
     }
-    watchDog++;
-    displayHeading();
+    if (handshake) {
+      handshake = false;
+      sendCommand();
+    }
+  }
+
+  PVector getLocation() {
+    return location;
   }
 
   void updateLocation(FiducialFound f) {
-    watchDog = 0;
+    watchdog = 0;
     rMatrix.set(f.getFiducialToCamera().getR());
     //detector.render(sketch, f);
     euler = ConvertRotation3D_F64.matrixToEuler(rMatrix, EulerType.XYZ, (double[])null);
@@ -116,7 +122,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
       } else if (dist >= hexSize/4) { //fine driving
         driveBool = false;
         nudgeDriveBool = true;
-      } 
+      }
 
       if (nudgeTurnBool) {
         if (abs(ldelta)<abs(rdelta)) {
@@ -138,8 +144,9 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
         if (checkCt > 0) {
           queue.moveComplete();
           resetVars();
+        } else {
+          checkCt++;
         }
-        else{checkCt++;}
       }
     }
   }
@@ -156,11 +163,11 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
     return theta;
   }
   void sendCommand() {
-    byte commandByte = ' ';         //invalid command will default to 'stop'
+    byte commandByte = ' ';     //invalid command will default to 'stop'
     if (command == "nright") {
-      commandByte = 'D';         //nudge right
+      commandByte = 'D'; //nudge right
     } else if (command == "nleft") {
-      commandByte = 'A';         //nudge left
+      commandByte = 'A'; //nudge left
     } else if (command == "stop") {
       commandByte = ' ';
     } else if (command == "left") {
@@ -179,23 +186,27 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
       println(command);
     }
   }
-  void displayHeading() {
-    pushMatrix();
-    translate(location.x, location.y);
-    strokeWeight(2);
-    fill(255, 0, 0);
-    textSize(24);
-    pushMatrix();
-    rotate(heading);
-    stroke(255, 0, 0);
-    line(0, 0, 0, -50);
-    popMatrix();
-    pushMatrix();
-    rotate(targetHeading);
-    stroke(0, 255, 0);
-    line(0, 0, 0, -50);
-    popMatrix();
-    popMatrix();
+  void displayHeading(PGraphics buffer) {
+    buffer.beginDraw();
+    buffer.pushMatrix();
+    buffer.translate(location.x*camScale, location.y*camScale);
+    buffer.strokeWeight(2);
+    buffer.fill(255, 0, 0);
+    buffer.textSize(24);
+    buffer.pushMatrix();
+    buffer.rotate(heading);
+    buffer.stroke(255, 0, 0);
+    buffer.line(0, 0, 0, -50);
+    buffer.popMatrix();
+    buffer.pushMatrix();
+    buffer.rotate(targetHeading);
+    buffer.stroke(0, 255, 0);
+    buffer.line(0, 0, 0, -50);
+    buffer.popMatrix();
+    buffer.noStroke();
+    buffer.ellipse(0, 0, 10, 10);
+    buffer.popMatrix();
+    buffer.endDraw();
     //float a = (atan2(dy, dx));
     //if (a < 0) {
     //  a+= TWO_PI;

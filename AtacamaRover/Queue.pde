@@ -1,12 +1,13 @@
-import processing.serial.*; //<>//
+import processing.serial.*; //<>// //<>// //<>// //<>//
 import java.util.Iterator;
-
+PGraphics GUI;
 
 class Queue {
 
   PApplet sketch;
   Rover rover;
   Serial myPort;
+  Hexgrid hexgrid;
   boolean newCommands;
   RoverCommand currentCommand;
   float destinationHeading;
@@ -19,17 +20,23 @@ class Queue {
   ArrayList<RoverCommand> commandList;
 
 
-  Queue(PApplet sketch_, Rover rover_, String serial) {
+  Queue(PApplet sketch_, Hexgrid hexgrid_, String serial, PGraphics GUI_) {
+    hexgrid = hexgrid_;
     byteList = new ArrayList<Byte>();
     commandList = new ArrayList<RoverCommand>();
     newCommands = false;
-
-    rover = rover_;
     sketch = sketch_;
+    GUI = GUI_;
     myPort = new Serial(sketch, serial, 115200);
     moveStartLocation = new PVector();
   }
+
+  void initRover(Rover rover_) {
+    rover = rover_;
+  }
+
   void update() {
+
     if ( myPort.available() > 0) { // If data is available,
       byte[] mainQueue = new byte[5];
       byte[] funcQueue = new byte[5];
@@ -51,6 +58,7 @@ class Queue {
         newCommands = true;
       }
     }
+    updateGUI();
   }
   void parseCodingBlocks( byte[] mainQueue, byte[] funcQueue ) {
     boolean function = false;
@@ -88,40 +96,45 @@ class Queue {
       }
     }
   }
-  void initClearCommandList(){
-   for (RoverCommand rc: commandList){
-     rc.h.fillin = false;
-   }
+  void initClearCommandList() {
+    for (RoverCommand rc : commandList) {
+      rc.h.fillin = false;
+    }
   }
   void parseCommandList() {
+    if (rover.watchdog <= 5) {
 
-    PVector lastXY = rover.location;
-    int cardinalHeading = roundHeading(rover.heading);
-    Hexagon hexLoc = hexGrid.pixelToHex((int)lastXY.x, (int)lastXY.y);
-    PVector hexKey = new PVector();
-    hexKey.set(hexLoc.getKey());
-    boolean drive = false;
-    initClearCommandList();
-    for (byte cmd : byteList) {
-      if (cmd == 119) { // 'w' forward
-        drive = true;
-      } else if (cmd == 97) { // 'a' counterclockwise
-        drive = false;
-        cardinalHeading -= 1;
-      } else if (cmd == 115) { // 's' back
-        drive = false;
-        cardinalHeading += 3;
-      } else if (cmd == 100) { // 'd' right/clockwise
-        drive = false;
-        cardinalHeading += 1;
-      }
-      if (cardinalHeading<0) {
-        cardinalHeading +=6; //<>//
-      }
-      if (cardinalHeading > 6) {
-        cardinalHeading-=6;
-      }
-      if (drive) {
+      PVector lastXY = rover.location;
+      int cardinalHeading = roundHeading(rover.heading);
+      Hexagon hexLoc = hexgrid.pixelToHex((int)lastXY.x, (int)lastXY.y);
+      PVector hexKey = new PVector();
+      hexKey.set(hexLoc.getKey());
+
+      initClearCommandList();
+      for (byte cmd : byteList) {
+        String iconName = "";
+        boolean drive = false;
+        boolean scan = false;
+        if (cmd == 119) { // 'w' forward
+          drive = true;
+          iconName = "forward.jpg";
+        } else if (cmd == 97) { // 'a' counterclockwise
+          drive = false;
+          iconName = "counterclockwise.jpg";
+          cardinalHeading -= 1;
+        } else if (cmd == 115) { // 's' back
+          iconName = "uturn.jpg";
+          drive = false;
+          cardinalHeading += 3;
+        } else if (cmd == 100) { // 'd' right/clockwise
+          iconName = "clockwise.jpg";
+          drive = false;
+          cardinalHeading += 1;
+        } else if (cmd==101) { // 'e' scan for life
+          iconName = "scan.jpg";
+          drive = false;
+          scan = true;
+        }
         while (cardinalHeading < 0 || cardinalHeading >= 6) {
           if (cardinalHeading < 0) {
             cardinalHeading += 6;
@@ -130,14 +143,18 @@ class Queue {
             cardinalHeading -= 6;
           }
         }
-        hexKey.add(hexGrid.neighbors[cardinalHeading]);
+        if (drive) {
+
+          hexKey.add(hexgrid.neighbors[cardinalHeading]);
+        }
+        Hexagon h = hexgrid.getHex(hexKey);
+        RoverCommand rc = new RoverCommand(h, cardinalHeading, drive, scan, iconName);
+        //Hexagon h_, int cardinalDir_, boolean drive_, boolean scan_, String iconName
+        commandList.add(rc);
       }
-      Hexagon h = hexGrid.getHex(hexKey);
-      RoverCommand rc = new RoverCommand(h, cardinalHeading, drive);
-      commandList.add(rc);
-    }
-    if (isActiveCommand()) {
-      currentCommand = commandList.get(0);
+      if (isActiveCommand()) {
+        currentCommand = commandList.get(0);
+      }
     }
   }
   int roundHeading(float heading_) {
@@ -158,10 +175,25 @@ class Queue {
     return (int) cHeading;
   }
 
+  void updateGUI() {
+    GUI.beginDraw();
+    GUI.background(0, 255, 255);
+    GUI.pushMatrix();
+    GUI.translate(50, GUI.height*.5);
+    GUI.imageMode(CENTER);
+    for (RoverCommand rc : commandList) {
+      PImage icon = rc.getIcon();
+      GUI.image(icon, 0, 0, 50, 50);
+      GUI.translate(75, 0);
+    }
+    GUI.popMatrix();
+    GUI.endDraw();
+  }
+
   float cardDirToRadians(int cardD) {
     float[] cardHtoTheta = {0, 60, 120, 180, 240, 300};
     while (cardD < 0 || cardD >= 6) {
-      if (cardD < 0) { 
+      if (cardD < 0) {
         cardD += 6;
       }
       if (cardD >= 6) {
@@ -208,16 +240,18 @@ class Queue {
             destinationHeading -= TWO_PI;
           }
         }
-        checkCt ++;
+        checkCt++;
       }
     } else if (currentCommand.reorientStatus()) { //if drive portion is complete, check for reorientation turns
       destinationHeading = currentCommand.getRadianDir();
       moveStartLocation.set(location); //set the destination to the rover's current position
+    } else {
+      destinationHeading = rover.heading;
     }
     return destinationHeading;
   }
 
-  float compareDistances(PVector roverDest) { //<>//
+  float compareDistances(PVector roverDest) {
     float distTraveled = abs(PVector.dist(moveStartLocation, location));
     float turnDistToTravel = abs(PVector.dist(moveStartLocation, roverDest));
     float distCompare =turnDistToTravel - distTraveled; //negative number means it has gone too far
@@ -232,7 +266,7 @@ class Queue {
   }
   PVector getDestination() {
     if (currentCommand.driveStatus()) {
-      PVector destination = currentCommand.getXY(); 
+      PVector destination = currentCommand.getXY();
       return destination;
     } else {
       return location;
@@ -246,7 +280,7 @@ class Queue {
     return currentCommand.reorientStatus();
   }
   void moveComplete() {
-    if (currentCommand.moveComplete()){
+    if (currentCommand.moveComplete()) {
       commandComplete();
     }
   }
@@ -266,9 +300,9 @@ class Queue {
 
   boolean isValid(byte tempByte, boolean function) {
 
-    if (tempByte == 119) {        // 'w' forward
+    if (tempByte == 119) {    // 'w' forward
       return true;
-    } else if (tempByte ==97) {   // 'a' counterclockwise
+    } else if (tempByte ==97) { // 'a' counterclockwise
       return true;
     } else if (tempByte == 115) { // 's' back
       return true;

@@ -1,13 +1,17 @@
-class Hexagon { //<>//
+class Hexagon {
   float size;
   int pixelX, pixelY;
-  int hexQ, hexR;   //q for "column" = x axis, r for "row" = z axis
+  float scaledX, scaledY, scaledSize;
+  int hexQ, hexR;     //q for "column" = x axis, r for "row" = z axis
   boolean inBounds;
   boolean changed;
   PVector id;
   PVector pixelxy;
   boolean occupied = false;
   boolean fillin = false;
+  
+
+  float scale; //multiplier to convert from the size of the camera to the display size
   Rover occupant;
 
   Hexagon(int hexQ_, int hexR_, int size_) {
@@ -22,6 +26,9 @@ class Hexagon { //<>//
     pixelxy = hexToPixel(hexQ, hexR);
     pixelX = int(pixelxy.x);
     pixelY = int(pixelxy.y);
+    scaledX = pixelX*camScale;
+    scaledY = pixelY*camScale;
+    scaledSize = scale*size;
     id = new PVector(hexX, hexY, hexZ);
     inBounds = true;
     changed = true;
@@ -31,25 +38,25 @@ class Hexagon { //<>//
     return(id);
   }
 
-  void drawHex() {
+  void drawHex(PGraphics buffer) {
     //if (inBounds) {
-    pushMatrix();
-    translate(pixelX, pixelY);
+    buffer.pushMatrix();
+    buffer.translate(scaledX, scaledY);
     if (this.occupied || this.fillin) {
-      fill(255, 100);
+      buffer.fill(255, 100);
     } else {
-      noFill();
+      buffer.noFill();
     }
-    strokeWeight(1);
-    stroke(255);
-    beginShape();
+    buffer.strokeWeight(2);
+    buffer.stroke(0);
+    buffer.beginShape();
     for (int i = 0; i <= 360; i +=60) {
       float theta = radians(i);
-      float cornerX = size * cos(theta);
-      float cornerY = size * sin(theta);
-      vertex(cornerX, cornerY);
+      float cornerX = camScale * size * cos(theta);
+      float cornerY = camScale * size * sin(theta);
+      buffer.vertex(cornerX, cornerY);
     }
-    endShape();
+    buffer.endShape();
 
     //      strokeWeight(2);
     //      stroke(0);
@@ -58,7 +65,7 @@ class Hexagon { //<>//
     //      textSize(8);
     //      textAlign(CENTER, CENTER);
     //      text(ID, 0, 0);
-    popMatrix();
+    buffer.popMatrix();
     //}
   }
 
@@ -92,13 +99,14 @@ class Hexagon { //<>//
     return(true);
   }
 
+
   void updateHashMaps() {
     if (changed) {
-      if (inBounds && !hexGrid.activeHexes.containsKey(id)) { //if newly in bounds, add to activeHexes hashmap
-        hexGrid.activeHexes.put(id, this);
-      } else if (!inBounds && hexGrid.activeHexes.containsKey(id)) //if newly oob, remove from activeHexes hashmap
+      if (inBounds && !hexgrid.activeHexes.containsKey(id)) { //if newly in bounds, add to activeHexes hashmap
+        hexgrid.activeHexes.put(id, this);
+      } else if (!inBounds && hexgrid.activeHexes.containsKey(id)) //if newly oob, remove from activeHexes hashmap
       {
-        hexGrid.activeHexes.remove(id);
+        hexgrid.activeHexes.remove(id);
       }
     }
     changed = false;

@@ -6,9 +6,10 @@
  If there is time, I will refactor this class into something resembling their much more elegant version.
  https://www.redblobgames.com/grids/hexagons/implementation.html
  */
-class HexGrid {
+class Hexgrid {
   HashMap<PVector, Hexagon> activeHexes;
   HashMap<PVector, Hexagon> allHexes;
+  Governor governor;
   Arena arena;
   PVector[] neighbors;
   int qMin = -1;   //the q axis corresponds to the x axis on the screen. Higher values are further right
@@ -20,8 +21,7 @@ class HexGrid {
 
 
 
-  HexGrid(int hexSize_) {
-
+  Hexgrid(int hexSize_) {
     arena = new Arena();
 
     neighbors = new PVector[6]; //pre-compute the 3D transformations to return adjacent hexes in 2D grid
@@ -40,7 +40,7 @@ class HexGrid {
       for (int r = rMin; r <= rMax; r++) {
         int y = -q - r;
         PVector loc = (hexToPixel(q, r));
-        if (loc.x > -hexSize && loc.x < width+hexSize && loc.y > 0-hexSize && loc.y < height+hexSize) {
+        if (loc.x > -hexSize && loc.x < camWidth+hexSize && loc.y > 0-hexSize && loc.y < camHeight+hexSize) {
           PVector hexID = new PVector(q, y, r);
           Hexagon h = new Hexagon(q, r, hexSize);
           allHexes.put(hexID, h);
@@ -66,14 +66,20 @@ class HexGrid {
     }
   }
 
-  void display() {
-    for (Map.Entry<PVector, Hexagon> me : activeHexes.entrySet()) {
+  void drawToBuffer(PGraphics buffer) {
+    buffer.beginDraw();
+    buffer.clear();
+    for (Map.Entry<PVector, Hexagon> me : allHexes.entrySet()) {
       Hexagon h = me.getValue();
       if (h.inBounds) {
-        h.drawHex();
+        h.drawHex(buffer);
       }
     }
+    buffer.endDraw();
   }
+
+  //void updateRoverLocation(int roverID, FiducialFound f) {
+  //}
 
   void setCorners(int ident, int x, int y) {
     arena.setCorners(ident, x, y);
