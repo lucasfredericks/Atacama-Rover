@@ -42,18 +42,18 @@ uint8_t commandLookup[17] = {
   ' ',      // 0000,  0     32      undefined
   ' ',      // 0001,  1     32      undefined
   ' ',      // 0010,  2     32      undefined
-  's',      // 0011,  3     115     scan
+  'e',      // 0011,  3     115     scan
   ' ',      // 0100,  4     32      undefined
   'q',      // 0101,  5     113     function
-  's',      // 0110,  6     115     scan
-  'l',      // 0111,  7     108     left
+  'e',      // 0110,  6     115     scan
+  'a',      // 0111,  7     108     left
   ' ',      // 1000,  8     32     undefined
-  's',      // 1001,  9     115     scan
+  'e',      // 1001,  9     115     scan
   'q',      // 1010,  10    113     function queue
-  'b',      // 1011,  11    98      back
-  's',      // 1100,  12    115     scan
-  'r',      // 1101,  13    114     right
-  'f',      // 1110,  14    102      forward
+  's',      // 1011,  11    98      back
+  'e',      // 1100,  12    115     scan
+  'd',      // 1101,  13    114     right
+  'w',      // 1110,  14    102      forward
   ' ',      // 1111,  15    32      undefined
   16,     // 10000, 16    endbyte
 };

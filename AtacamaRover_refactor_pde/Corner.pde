@@ -3,7 +3,7 @@ class Corner {
   int x;
   int y;
 
-
+  
   Corner(int ident_){
     ident = ident_;
     x = 0;
@@ -13,5 +13,5 @@ class Corner {
     x = x_;
     y = y_;
   }
-
+  
 }

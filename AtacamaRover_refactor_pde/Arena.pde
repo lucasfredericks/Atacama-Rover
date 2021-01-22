@@ -80,7 +80,7 @@ class Arena { //<>//
         //point(middle.x, middle.y);
         int x = (int) middle.x;
         int y = (int) middle.y;
-        Hexagon h = hexgrid.pixelToHex(x, y);
+        Hexagon h = hexGrid.pixelToHex(x, y);
         if (h != null) {
           h.setState(false);
         }
