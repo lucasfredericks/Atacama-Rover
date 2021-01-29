@@ -9,7 +9,9 @@ class Hexagon {
   PVector pixelxy;
   boolean occupied = false;
   boolean fillin = false;
-  
+  int blinkAlpha = 0;
+  boolean blink = false;
+
 
   float scale; //multiplier to convert from the size of the camera to the display size
   Rover occupant;
@@ -38,15 +40,11 @@ class Hexagon {
     return(id);
   }
 
-  void drawHex(PGraphics buffer) {
+  void drawHexOutline(PGraphics buffer) {
     //if (inBounds) {
     buffer.pushMatrix();
     buffer.translate(scaledX, scaledY);
-    if (this.occupied || this.fillin) {
-      buffer.fill(255, 100);
-    } else {
-      buffer.noFill();
-    }
+    buffer.noFill();
     buffer.strokeWeight(2);
     buffer.stroke(0);
     buffer.beginShape();
@@ -67,6 +65,50 @@ class Hexagon {
     //      text(ID, 0, 0);
     buffer.popMatrix();
     //}
+  }
+
+  void drawHexFill(PGraphics buffer) {
+    buffer.pushMatrix();
+    buffer.translate(scaledX, scaledY);
+    buffer.fill(255, 50);
+    buffer.noStroke();
+    buffer.beginShape();
+    for (int i = 0; i <= 360; i +=60) {
+      float theta = radians(i);
+      float cornerX = camScale * size * cos(theta);
+      float cornerY = camScale * size * sin(theta);
+      buffer.vertex(cornerX, cornerY);
+    }
+    buffer.endShape();
+    buffer.popMatrix();
+  }
+  void blinkHex(PGraphics buffer) {
+    buffer.pushMatrix();
+    buffer.translate(scaledX, scaledY);
+    buffer.fill(255, blinkAlpha);
+    buffer.noStroke();
+    buffer.beginShape();
+    for (int i = 0; i <= 360; i +=60) {
+      float theta = radians(i);
+      float cornerX = camScale * size * cos(theta);
+      float cornerY = camScale * size * sin(theta);
+      buffer.vertex(cornerX, cornerY);
+    }
+    buffer.endShape();
+    buffer.popMatrix();  
+    if (blinkAlpha<=0) {
+      blink = true;
+    }
+    if (blinkAlpha >=255) {
+      blink = false;
+    }
+    if (blink) {
+      blinkAlpha+= 25;
+    } else {
+      blinkAlpha-=25;
+    }
+    constrain(blinkAlpha,0,255);
+    //println("blink: " + blinkAlpha);
   }
 
   void setState(boolean on) {

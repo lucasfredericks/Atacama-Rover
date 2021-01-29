@@ -5,9 +5,11 @@ PGraphics GUI;
 class Queue {
 
   PApplet sketch;
+  CardList cardList;
   Rover rover;
   Serial myPort;
   Hexgrid hexgrid;
+  Hexagon scanDest;
   boolean newCommands;
   RoverCommand currentCommand;
   float destinationHeading;
@@ -20,7 +22,8 @@ class Queue {
   ArrayList<RoverCommand> commandList;
 
 
-  Queue(PApplet sketch_, Hexgrid hexgrid_, String serial, PGraphics GUI_) {
+  Queue(PApplet sketch_, CardList cardList_, Hexgrid hexgrid_, String serial, PGraphics GUI_) {
+    cardList = cardList_;
     hexgrid = hexgrid_;
     byteList = new ArrayList<Byte>();
     commandList = new ArrayList<RoverCommand>();
@@ -29,6 +32,7 @@ class Queue {
     GUI = GUI_;
     myPort = new Serial(sketch, serial, 115200);
     moveStartLocation = new PVector();
+    pickScanDest();
   }
 
   void initRover(Rover rover_) {
@@ -59,6 +63,16 @@ class Queue {
       }
     }
     updateGUI();
+  }
+
+  void pickScanDest() {
+    Hexagon h;
+    Object[] keys = hexgrid.allHexes.keySet().toArray();
+    do {
+      Object randHexKey = keys[new Random().nextInt(keys.length)];
+      h = hexgrid.getHex((PVector)randHexKey);
+    } while (!h.inBounds && h!= scanDest);
+    scanDest = h;
   }
   void parseCodingBlocks( byte[] mainQueue, byte[] funcQueue ) {
     boolean function = false;
@@ -102,6 +116,7 @@ class Queue {
     }
   }
   void parseCommandList() {
+    commandList.clear();
     if (rover.watchdog <= 5) {
 
       PVector lastXY = rover.location;
@@ -188,6 +203,16 @@ class Queue {
     }
     GUI.popMatrix();
     GUI.endDraw();
+  }
+
+  void drawHexes(PGraphics buffer) {
+    buffer.beginDraw();
+    for (RoverCommand rc : commandList) {
+      Hexagon h = rc.getHex();
+      h.drawHexFill(buffer);
+    }
+    scanDest.blinkHex(buffer);
+    buffer.endDraw();
   }
 
   float cardDirToRadians(int cardD) {
@@ -280,10 +305,17 @@ class Queue {
     return currentCommand.reorientStatus();
   }
   void moveComplete() {
-    if (currentCommand.moveComplete()) {
+    if (currentCommand.scan) {
+      
+      if (cardList.scan(currentCommand.getHex(), scanDest)) {
+        pickScanDest();
+      }
+      commandComplete();
+    } else if (currentCommand.moveComplete()) {
       commandComplete();
     }
   }
+
 
   void commandComplete() {
     checkCt = 0;

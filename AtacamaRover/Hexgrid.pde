@@ -40,7 +40,7 @@ class Hexgrid {
       for (int r = rMin; r <= rMax; r++) {
         int y = -q - r;
         PVector loc = (hexToPixel(q, r));
-        if (loc.x > -hexSize && loc.x < camWidth+hexSize && loc.y > 0-hexSize && loc.y < camHeight+hexSize) {
+        if (loc.x > -.5*hexSize && loc.x < camWidth+.5*hexSize && loc.y > 0-.5*hexSize && loc.y < camHeight+.5*hexSize) {
           PVector hexID = new PVector(q, y, r);
           Hexagon h = new Hexagon(q, r, hexSize);
           allHexes.put(hexID, h);
@@ -66,18 +66,21 @@ class Hexgrid {
     }
   }
 
-  void drawToBuffer(PGraphics buffer) {
+  void drawOutlines(PGraphics buffer) {
     buffer.beginDraw();
     buffer.clear();
     for (Map.Entry<PVector, Hexagon> me : allHexes.entrySet()) {
       Hexagon h = me.getValue();
       if (h.inBounds) {
-        h.drawHex(buffer);
+        h.drawHexOutline(buffer);
       }
     }
     buffer.endDraw();
   }
 
+  void drawHexFill(PGraphics buffer, Hexagon h){
+    
+  }
   //void updateRoverLocation(int roverID, FiducialFound f) {
   //}
 
@@ -121,6 +124,16 @@ class Hexgrid {
     PVector hexID = new PVector();
     hexID.x = (2./3*xPixel)/hexSize;
     hexID.z = (-1./3 * xPixel + sqrt(3)/3 * yPixel)/hexSize;
+    hexID.y = (-hexID.x - hexID.z);
+    hexID = cubeRound(hexID);
+    Hexagon h = allHexes.get(hexID);
+    return h;
+  }
+  
+  Hexagon pixelToHex(PVector location) {   //find which hex a specified pixel lies in
+    PVector hexID = new PVector();
+    hexID.x = (2./3*location.x)/hexSize;
+    hexID.z = (-1./3 * location.x + sqrt(3)/3 * location.y)/hexSize;
     hexID.y = (-hexID.x - hexID.z);
     hexID = cubeRound(hexID);
     Hexagon h = allHexes.get(hexID);

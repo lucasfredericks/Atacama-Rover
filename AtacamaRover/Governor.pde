@@ -21,9 +21,10 @@ class Governor {
     HUDbuffer = createGraphics(1920, 1080);
     hexgridBuffer = createGraphics(1280, 960);
     rover = new Rover(hexgrid, sketch, roverPortName);
-    queue = new Queue(sketch, hexgrid, queuePortName, queueGUI);
+    queue = new Queue(sketch, cardList, hexgrid, queuePortName, queueGUI);
     rover.initQueue(queue);
     queue.initRover(rover);
+    hexgrid.drawOutlines(hexgridBuffer);
   }
   void run() {
     queue.update();
@@ -34,7 +35,9 @@ class Governor {
 
   void updateHUD() { //draw HUD
 
-    hexgrid.drawToBuffer(hexgridBuffer);
+    hexgridBuffer.beginDraw();
+    hexgridBuffer.clear();
+    queue.drawHexes(hexgridBuffer);
     rover.displayHeading(hexgridBuffer);
 
     //display queue
