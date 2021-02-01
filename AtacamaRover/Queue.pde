@@ -1,4 +1,4 @@
-import processing.serial.*; //<>// //<>// //<>// //<>//
+import processing.serial.*; //<>// //<>// //<>// //<>// //<>//
 import java.util.Iterator;
 PGraphics GUI;
 
@@ -85,9 +85,10 @@ class Queue {
     while (cmdCount < 5) {
       if (!function) {
         tempByte = mainQueue[cmdCount];
-        if (tempByte == 113) //"function"
+        if (tempByte == 113) { //"function"
+          println("Function");
           function = true;
-        else if (isValid(tempByte, function)) {
+        } else if (isValid(tempByte, function)) {
           byteList.add(tempByte);
         }
         if (!function) {
@@ -101,8 +102,8 @@ class Queue {
             { //ignore recursive functions and invalid commands
               byteList.add(tempByte);
             }
-            funcCount++;
           }
+          funcCount++;
         }
         function = false;
         funcCount = 0;
@@ -162,10 +163,12 @@ class Queue {
 
           hexKey.add(hexgrid.neighbors[cardinalHeading]);
         }
-        Hexagon h = hexgrid.getHex(hexKey);
-        RoverCommand rc = new RoverCommand(h, cardinalHeading, drive, scan, iconName);
-        //Hexagon h_, int cardinalDir_, boolean drive_, boolean scan_, String iconName
-        commandList.add(rc);
+        if (hexgrid.checkHex(hexKey)) {
+          Hexagon h = hexgrid.getHex(hexKey);
+          RoverCommand rc = new RoverCommand(h, cardinalHeading, drive, scan, iconName);
+          //Hexagon h_, int cardinalDir_, boolean drive_, boolean scan_, String iconName
+          commandList.add(rc);
+        }
       }
       if (isActiveCommand()) {
         currentCommand = commandList.get(0);
@@ -306,7 +309,7 @@ class Queue {
   }
   void moveComplete() {
     if (currentCommand.scan) {
-      
+
       if (cardList.scan(currentCommand.getHex(), scanDest)) {
         pickScanDest();
       }
@@ -342,7 +345,7 @@ class Queue {
       return true;
     } else if (tempByte == 101) { // 'e' scan for life
       return true;
-    } else if (!function && tempByte ==  113) {// 'q' queue function
+    } else if (!function && tempByte ==  113) {// 'q' queue function ignores recursive functions
       return true;
     } else {
       return false;

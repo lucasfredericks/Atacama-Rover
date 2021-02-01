@@ -40,7 +40,8 @@ class Hexgrid {
       for (int r = rMin; r <= rMax; r++) {
         int y = -q - r;
         PVector loc = (hexToPixel(q, r));
-        if (loc.x > -.5*hexSize && loc.x < camWidth+.5*hexSize && loc.y > 0-.5*hexSize && loc.y < camHeight+.5*hexSize) {
+        //if (loc.x > -.5*hexSize && loc.x < camWidth+.5*hexSize && loc.y > 0-.5*hexSize && loc.y < camHeight+.5*hexSize) {
+          if (loc.x > hexSize && loc.x < camWidth - hexSize && loc.y > 0 && loc.y < camHeight) {
           PVector hexID = new PVector(q, y, r);
           Hexagon h = new Hexagon(q, r, hexSize);
           allHexes.put(hexID, h);
@@ -154,6 +155,17 @@ class Hexgrid {
       }
     }
     return(neighborList);
+  }
+  
+  boolean checkHex(PVector hexKey_){
+    return (allHexes.containsKey(hexKey_));
+  }
+  Hexagon getNeighbor(Hexagon h, int neighbor){
+    PVector hexID = h.getKey();
+    PVector neighborID = hexID.copy();
+    neighborID = neighborID.add(neighbors[neighbor]);
+    Hexagon neighborHex = getHex(neighborID);
+    return h;
   }
 
   Hexagon[] getNeighbors(PVector hexID) {   //overloaded method to accept a pvector key instead of a Hexagon object

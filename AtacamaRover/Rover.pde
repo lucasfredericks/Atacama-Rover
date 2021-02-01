@@ -103,7 +103,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
 
       destination = queue.getDestination();
       dist = queue.compareDistances(destination);
-      println(dist);
+      //println(dist);
 
       //set drive/turn variables
       if (min(abs(ldelta), abs(rdelta))>turnMOE) { //do coarse turning first
@@ -116,7 +116,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
         nudgeTurnBool = false;
         turnBool = false;
       }
-      if (dist >= 2*hexSize) { //coarse driving
+      if (dist >= hexSize) { //coarse driving
         driveBool = true;
         nudgeDriveBool = false;
       } else if (dist >= hexSize/4) { //fine driving
