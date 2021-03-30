@@ -28,11 +28,11 @@ String commandLookup[16] = {
 
      Since we are taking orientation into account for some commands
      but not others, there will be redundancy (i.e. a FUNC can be rotated to W,E or S,N,
-     but will still resolve to the same command, but a Drive block can be rotated to N, E, S, or W, 
+     but will still resolve to the same command, but a Drive block can be rotated to N, E, S, or W,
      and each orientation will resolve to a unique directional command).
   */
 
-//char         bin    int   ascii   command
+  //char         bin    int   ascii   command
   " ",      // 0000,  0     32      undefined
   "n",      // 0001,  1     110     north
   "e",      // 0010,  2     101     east
@@ -50,43 +50,7 @@ String commandLookup[16] = {
   " ",      // 1110,  14    32      undefined
   " ",      // 1111,  15    32      undefined
 };
-
-
-void setup() {
-  //start serial
-  Serial.begin(9600);
-
-  //define pin modes
-  pinMode(latchPin, OUTPUT);
-  pinMode(clockPin, OUTPUT);
-  pinMode(dataPin, INPUT);
-  pinMode(interruptPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(interruptPin), buttonPress, FALLING);
-  
-  strokes = 0;
-  wait = true;
-  button = false;
-  function = false;
-}
-
-void buttonPress(){
-  detachInterrupt(digitalPinToInterrupt(interruptPin);
-  button = true;  
-  strokes++;
-  delay(20);
-  attachInterrupt(digitalPinToInterrupt(interruptPin);
-}
-void loop() {
-  
-  if(button){
-    clearQueue();
-    shiftIn();      
-  }
-  if(!wait){
-  sendCommands();
-}
-
-void clearQueue(){
+void clearQueue() {
   mainCt = 0;
   funcCt = 0;
   for (int i = 0; i < rows; i++) { //clear the queues
@@ -97,14 +61,14 @@ void clearQueue(){
 
 String sendCommand() {
 
-    String cmd = commandLookup[mainQueue[queueCt]];
-    if (cmd == "FUNC") {
-      sendFuncComands();
-    }
-    else if (cmd != " ") {
-      Serial.println(cmd);
-    }
+  String cmd = commandLookup[mainQueue[queueCt]];
+  if (cmd == "FUNC") {
+    sendFuncComands();
   }
+  else if (cmd != " ") {
+    Serial.println(cmd);
+  }
+}
 }
 void sendFuncComands() {
   for (int funcCt = 0; funcCt < rows; funcCt++) {
@@ -119,17 +83,17 @@ void sendFuncComands() {
 void waitForResponse() {
   while (!Serial.available()) {
   }
-  if(Serial.available()){
+  if (Serial.available()) {
     uint8_t inByte = Serial.read();
-    if(inByte = "ready"){
+    if (inByte = "ready") {
       return;
     }
-    else if (inByte = "found"){
+    else if (inByte = "found") {
       resetCounter();
     }
   }
 }
-void resetCounter(){
+void resetCounter() {
   strokes = 0;
 }
 
@@ -143,7 +107,7 @@ void shiftIn() {
   //set it to 0 to transmit data serially
   digitalWrite(latchPin, 0);
 
- 
+
   //we will be holding the clock pin high at the
   //end of each time through the for loop
 
@@ -182,10 +146,46 @@ void shiftIn() {
     uint8_t rightNibble = tempByte & rightCompare;   // bitwise AND with 00001111 to extract the second nibble into its own byte
     uint8_t leftNibble = tempByte >> 4;              // bitshift right to extract the first nibble into its own byte
     funcQueue[j] = rightNibble;
-    funcQueue[j + 1] = leftNibble;    
+    funcQueue[j + 1] = leftNibble;
     if (debug) {
       Serial.println (leftNibble, BIN);
       Serial.println(rightNibble, BIN);
     }
   }
 }
+
+void buttonPress() {
+  detachInterrupt(digitalPinToInterrupt(interruptPin));
+  button = true;
+  strokes++;
+  delay(20);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), buttonPress, FALLING);
+}
+
+void setup() {
+  //start serial
+  Serial.begin(9600);
+
+  //define pin modes
+  pinMode(latchPin, OUTPUT);
+  pinMode(clockPin, OUTPUT);
+  pinMode(dataPin, INPUT);
+  pinMode(interruptPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), buttonPress, FALLING);
+
+  strokes = 0;
+  wait = true;
+  button = false;
+  function = false;
+}
+
+
+void loop() {
+
+  if (button) {
+    clearQueue();
+    shiftIn();
+  }
+  if (!wait) {
+    sendCommands();
+  }
