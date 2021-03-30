@@ -1,24 +1,30 @@
+/* To add:
+   wait for query from rover before sending a command (sleep the rover's xbee and wake up intermittently
+        to see if the reader board wants to send a command
+
+
+*/
+
+
 
 //define where your pins are
 int latchPin = 8;
 int dataPin = 10;
 int clockPin = 9;
+int debugPin = 5;
 const byte interruptPin = 3;
+
 volatile boolean button;
+unsigned long lastButton;
+int debounce = 500; //milli time comparison to debounce button
 
-const int rows = 6;
-
-uint8_t mainQueue [rows] = {0, 0, 0, 0, 0, 0};
-uint8_t funcQueue [rows] = {0, 0, 0, 0, 0, 0};
-uint8_t rightCompare = 15; //binary 00001111
-boolean wait;
-boolean function;
-int mainCt;
-int funcCt;
-volatile int strokes;
 boolean debug = false;
 
-String commandLookup[16] = {
+
+const int rows = 12;
+uint8_t queue [rows] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+uint8_t commandLookup[17] = {
   /* Each shift register reads one byte from two code readers of four bits (i.e. a nibble) each.
      shiftIn() separates the two nibbles into two bytes where the first four digits are always zero,
      and the last four digits indicate the binary state of the four directional switches (W,S,E,N).
@@ -33,68 +39,43 @@ String commandLookup[16] = {
   */
 
   //char         bin    int   ascii   command
-  " ",      // 0000,  0     32      undefined
-  "n",      // 0001,  1     110     north
-  "e",      // 0010,  2     101     east
-  "d",      // 0011,  3     100     drill
-  "s",      // 0100,  4     115     south
-  "f",      // 0101,  5     102     function
-  "d",      // 0110,  6     100     drill
-  " ",      // 0111,  7     32      undefined
-  "w",      // 1000,  8     119     west
-  "d",      // 1001,  9     200     drill
-  "f",      // 1010,  10    102     function
-  " ",      // 1011,  11    32      undefined
-  "d",      // 1100,  12    200     drill
-  " ",      // 1101,  13    32      undefined
-  " ",      // 1110,  14    32      undefined
-  " ",      // 1111,  15    32      undefined
+  ' ',      // 0000,  0     32      undefined
+  ' ',      // 0001,  1     32      undefined
+  ' ',      // 0010,  2     32      undefined
+  'e',      // 0011,  3     115     scan
+  ' ',      // 0100,  4     32      undefined
+  'q',      // 0101,  5     113     function
+  'e',      // 0110,  6     115     scan
+  'a',      // 0111,  7     108     left
+  ' ',      // 1000,  8     32     undefined
+  'e',      // 1001,  9     115     scan
+  'q',      // 1010,  10    113     function queue
+  's',      // 1011,  11    98      back
+  'e',      // 1100,  12    115     scan
+  'd',      // 1101,  13    114     right
+  'w',      // 1110,  14    102      forward
+  ' ',      // 1111,  15    32      undefined
+  16,     // 10000, 16    endbyte
 };
+
 void clearQueue() {
-  mainCt = 0;
-  funcCt = 0;
   for (int i = 0; i < rows; i++) { //clear the queues
-    mainQueue[i] = 0;
-    funcQueue[i] = 0;
+    queue[i] = 0;
   }
 }
 
-String sendCommand() {
-
-  String cmd = commandLookup[mainQueue[queueCt]];
-  if (cmd == "FUNC") {
-    sendFuncComands();
+void sendCommand() {
+  if (debug) {
+        for (int i = 0; i < rows; i++) {
+          Serial.print(i);
+          Serial.print(" = ");
+          Serial.println(queue[i]);
+        }
+    Serial.println("~~~~~~~~~~~~~~~~~~~~~~");
   }
-  else if (cmd != " ") {
-    Serial.println(cmd);
+  else {
+    Serial.write(queue, rows);
   }
-}
-}
-void sendFuncComands() {
-  for (int funcCt = 0; funcCt < rows; funcCt++) {
-    String cmd = commandLookup[funcQueue[funcCt]];
-    if (cmd != "FUNC" && cmd != " ") { //ignore recursive functions and unknown commands
-      Serial.println(cmd);
-      waitForResponse();
-    }
-  }
-}
-
-void waitForResponse() {
-  while (!Serial.available()) {
-  }
-  if (Serial.available()) {
-    uint8_t inByte = Serial.read();
-    if (inByte = "ready") {
-      return;
-    }
-    else if (inByte = "found") {
-      resetCounter();
-    }
-  }
-}
-void resetCounter() {
-  strokes = 0;
 }
 
 void shiftIn() {
@@ -116,7 +97,8 @@ void shiftIn() {
   //register's DataPin to change state based on the value
   //of the next bit in its serial information flow.
 
-  uint8_t tempByte = 0;
+  uint8_t tempByte = 0;      //binary 00000000
+  uint8_t rightCompare = 15; //binary 00001111
 
   for (int j = 0; j < rows; j += 2) {
     for (int i = 0; i < 8; i ++) {
@@ -128,29 +110,48 @@ void shiftIn() {
     }
     uint8_t rightNibble = tempByte & rightCompare;   // bitwise AND with 00001111 to extract the second nibble into its own byte
     uint8_t leftNibble = tempByte >> 4;              // bitshift right to extract the first nibble into its own byte
-    mainQueue[j] = rightNibble;
-    mainQueue[j + 1] = leftNibble;
-    if (debug) {
-      Serial.println (leftNibble, BIN);
-      Serial.println(rightNibble, BIN);
-    }
+    queue[j] = commandLookup[leftNibble];
+    queue[j + 1] = commandLookup[rightNibble];
+
   }
-  for (int j = 0; j < rows; j += 2) {
-    for (int i = 0; i < 8; i ++) {
-      digitalWrite(clockPin, 0);
-      delayMicroseconds(2);
-      boolean tempBool = digitalRead(dataPin);
-      bitWrite(tempByte, i, tempBool);
-      digitalWrite(clockPin, 1);
-    }
-    uint8_t rightNibble = tempByte & rightCompare;   // bitwise AND with 00001111 to extract the second nibble into its own byte
-    uint8_t leftNibble = tempByte >> 4;              // bitshift right to extract the first nibble into its own byte
-    funcQueue[j] = rightNibble;
-    funcQueue[j + 1] = leftNibble;
-    if (debug) {
-      Serial.println (leftNibble, BIN);
-      Serial.println(rightNibble, BIN);
-    }
+  uint8_t interesting = 16;
+  queue[11] = interesting; //last byte is an endbyte
+}
+
+void buttonPress() {
+  if (millis() - lastButton >= debounce) {
+    button = true;
+    lastButton = millis();
+  }
+}
+
+void setup() {
+  //start serial
+  Serial.begin(115200);
+
+  //define pin modes
+  pinMode(latchPin, OUTPUT);
+  pinMode(clockPin, OUTPUT);
+  pinMode(debugPin, INPUT_PULLUP);
+  pinMode(dataPin, INPUT);
+  pinMode(interruptPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), buttonPress, FALLING);
+  button = false;
+  lastButton = millis();
+  clearQueue();
+}
+
+
+void loop() {
+  debug = !digitalRead(debugPin);
+
+  if (button) {
+    clearQueue();
+    shiftIn();
+    delay(10);
+    sendCommand();
+    button = false;
+
   }
 }
 
