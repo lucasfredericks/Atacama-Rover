@@ -1,12 +1,14 @@
 class Hexagon {
   float size;
   int pixelX, pixelY;
+  Hexgrid hexgrid;
   float scaledX, scaledY, scaledSize;
   int hexQ, hexR;     //q for "column" = x axis, r for "row" = z axis
   boolean inBounds;
   boolean changed;
   PVector id;
   PVector pixelxy;
+  Vector3D_F64 rwCoords;
   boolean occupied = false;
   boolean fillin = false;
   int blinkAlpha = 0;
@@ -16,7 +18,8 @@ class Hexagon {
   float scale; //multiplier to convert from the size of the camera to the display size
   Rover occupant;
 
-  Hexagon(int hexQ_, int hexR_, int size_) {
+  Hexagon(Hexgrid hexgrid_, int hexQ_, int hexR_, int size_) {
+    hexgrid = hexgrid_;
     hexQ = hexQ_;
     hexR = hexR_;
     int hexX = hexQ;
@@ -24,13 +27,14 @@ class Hexagon {
     int hexY = -hexX - hexZ;
 
     size = size_;
-    pixelxy = new PVector();
     pixelxy = hexToPixel(hexQ, hexR);
     pixelX = int(pixelxy.x);
     pixelY = int(pixelxy.y);
     scaledX = pixelX*camScale;
     scaledY = pixelY*camScale;
     scaledSize = scale*size;
+    //rwCoords = new Vector3D_F64();
+    rwCoords = hexgrid.pixelToWorld(pixelxy).toVector();
     id = new PVector(hexX, hexY, hexZ);
     inBounds = true;
     changed = true;
@@ -41,12 +45,11 @@ class Hexagon {
   }
 
   void drawHexOutline(PGraphics buffer) {
-    //if (inBounds) {
     buffer.pushMatrix();
     buffer.translate(scaledX, scaledY);
     buffer.noFill();
     buffer.strokeWeight(2);
-    buffer.stroke(0);
+    buffer.stroke(0, 255, 2550);
     buffer.beginShape();
     for (int i = 0; i <= 360; i +=60) {
       float theta = radians(i);
@@ -54,17 +57,17 @@ class Hexagon {
       float cornerY = camScale * size * sin(theta);
       buffer.vertex(cornerX, cornerY);
     }
-    buffer.endShape();
-
-    //      strokeWeight(2);
-    //      stroke(0);
-    //      fill(0);
-    //      String ID = ("(" + hexQ + ", " + hexY + ", " + hexR + ")");
-    //      textSize(8);
-    //      textAlign(CENTER, CENTER);
-    //      text(ID, 0, 0);
+    buffer.endShape(CLOSE);
+    if (false) {
+      buffer.strokeWeight(2);
+      buffer.stroke(0);
+      buffer.fill(0);
+      String ID = id.x + ", " + id.y + ", " + id.z;
+      buffer.textSize(12);
+      buffer.textAlign(CENTER, CENTER);
+      buffer.text(ID, 0, 0);
+    }
     buffer.popMatrix();
-    //}
   }
 
   void drawHexFill(PGraphics buffer) {
@@ -107,7 +110,7 @@ class Hexagon {
     } else {
       blinkAlpha-=25;
     }
-    constrain(blinkAlpha,0,255);
+    constrain(blinkAlpha, 0, 255);
     //println("blink: " + blinkAlpha);
   }
 
@@ -125,42 +128,19 @@ class Hexagon {
     occupant = null;
   }
 
-  boolean checkMask() {
-    boolean mask; // true means the hex will be inbounds
-    if (pixelY <= 0 || pixelY >= height || pixelX <= 0 || pixelX >= width) {
-      mask = false;
-    } else {
-      int val = arena.arenaMask.get(pixelX, pixelY);
-      if (val != -1) {
-        mask = true;
-      } else {
-        mask = false;
-      }
-    }
-    //return(mask);
-    return(true);
-  }
-
-
-  void updateHashMaps() {
-    if (changed) {
-      if (inBounds && !hexgrid.activeHexes.containsKey(id)) { //if newly in bounds, add to activeHexes hashmap
-        hexgrid.activeHexes.put(id, this);
-      } else if (!inBounds && hexgrid.activeHexes.containsKey(id)) //if newly oob, remove from activeHexes hashmap
-      {
-        hexgrid.activeHexes.remove(id);
-      }
-    }
-    changed = false;
-  }
-
   PVector hexToPixel(int q, int r) {
     PVector temp = new PVector(0, 0);
     temp.x = hexSize * (3./2 * q);
     temp.y = hexSize * (sqrt(3)/2 * q + sqrt(3) * r);
+    //println(temp);
     return(temp);
   }
   PVector getXY() {
     return (pixelxy);
+  }
+  double getDist(Vector3D_F64 roverLoc) {
+    rwCoords.setZ(roverLoc.z); 
+    double dist = roverLoc.distance(rwCoords)*lambda;
+    return dist;
   }
 }

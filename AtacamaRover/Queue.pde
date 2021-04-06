@@ -16,6 +16,7 @@ class Queue {
   float commandTotalDistance = 0;
   int checkCt = 0;
   PVector location;
+  Se3_F64 roverToCamera;
   PVector moveStartLocation;
 
   ArrayList<Byte> byteList;
@@ -33,6 +34,7 @@ class Queue {
     myPort = new Serial(sketch, serial, 115200);
     moveStartLocation = new PVector();
     pickScanDest();
+    location = new PVector(camWidth/2, camHeight/2);
   }
 
   void initRover(Rover rover_) {
@@ -289,8 +291,9 @@ class Queue {
 
 
 
-  void updateLocation(PVector location_) {
-    location = location_;
+  void updateLocation(Se3_F64 fLoc) {
+    roverToCamera=fLoc;
+    rover.drive();
   }
   PVector getDestination() {
     if (currentCommand.driveStatus()) {
@@ -299,6 +302,11 @@ class Queue {
     } else {
       return location;
     }
+  }
+  double getDistance() {
+    Vector3D_F64 translation = roverToCamera.getT();
+    double dist = currentCommand.h.getDist(translation);
+    return dist;
   }
 
   boolean driveStatus() {

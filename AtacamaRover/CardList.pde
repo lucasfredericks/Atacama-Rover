@@ -6,7 +6,7 @@ class CardList {
   PImage[] notFound;
   PImage instructions;
   PImage currentCard;
-  
+
 
   int lastLife;
   int lastEvidence;

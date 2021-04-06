@@ -67,11 +67,6 @@ class Governor {
 
 
   void updateRoverLocation(FiducialFound f) {
-    rover.updateLocation(f);
-  }
-
-  PVector getLocation() {
-    PVector location = rover.getLocation();
-    return location;
+    queue.updateLocation(f.getFiducialToCamera());
   }
 }

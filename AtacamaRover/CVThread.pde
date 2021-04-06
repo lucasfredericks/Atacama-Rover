@@ -8,15 +8,14 @@ class CVThread extends Thread {
   volatile long startFrame;
   volatile int latencyRatio;
 
-  CVThread() {
+  CVThread(CameraPinholeBrown intrinsic_) {
     //camera = cam_;
     ready = true;
     dataFlag = false;
     detector = Boof.fiducialSquareBinaryRobust(0.1);
     String filePath = sketchPath() + "/data";
-    CameraPinholeBrown intrinsic = CalibrationIO.load(new File(filePath, "intrinsic.yaml"));
-    //detector.setIntrinsic(intrinsic);
-    detector.guessCrappyIntrinsic(1280, 960);
+    detector.setIntrinsic(intrinsic);
+    //detector.guessCrappyIntrinsic(1280, 960);
     startFrame = frameCount;
   }
   void run() {

@@ -47,8 +47,8 @@ class RoverCommand { // should this extend Hexagon class?
   boolean driveStatus() {
     return drive;
   }
-  boolean scanStatus(){
-   return scan; 
+  boolean scanStatus() {
+    return scan;
   }
   boolean reorientStatus() {
     return reorient;
