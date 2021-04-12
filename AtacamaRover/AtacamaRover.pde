@@ -111,9 +111,12 @@ void draw() {
         int xpos = (int) f.getImageLocation().x;
         int ypos = (int) f.getImageLocation().y;
         //println(f.getFiducialToCamera().getR());
-        int ident = (int) f.getId() - 1;
-        governor1.updateRoverLocation(f);
-        //detector.render(this, f);
+        //int ident = (int) f.getId() - 1;
+        //println(ident);
+        if (f.getId()==6) {
+          governor1.updateRoverLocation(f);
+          //detector.render(this, f);
+        }
       }
     }
     governor1.run();
@@ -121,7 +124,6 @@ void draw() {
   ////canvas.beginDraw();
   image(cam, 0, 0, camBufferWidth, camBufferHeight);
   //image(arenaMask, 0, 0, camBufferWidth, camBufferHeight);
-  //hexgrid.drawOutlines(gridOutlines);
   image(gridOutlines, 0, 0);
   image(governor1.displayHUD(), 0, 0);
   pushMatrix();
@@ -131,5 +133,4 @@ void draw() {
   translate(20, height-20);
   text(stats, 0, 0);
   popMatrix();
-  //image(arenaMask, 0, 0);
 }

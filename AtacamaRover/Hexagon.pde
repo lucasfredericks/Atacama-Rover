@@ -49,7 +49,7 @@ class Hexagon {
     buffer.translate(scaledX, scaledY);
     buffer.noFill();
     buffer.strokeWeight(2);
-    buffer.stroke(0, 255, 2550);
+    buffer.stroke(#a9e3df);
     buffer.beginShape();
     for (int i = 0; i <= 360; i +=60) {
       float theta = radians(i);

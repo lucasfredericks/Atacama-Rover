@@ -14,15 +14,22 @@ int clockPin = 9;
 int debugPin = 5;
 const byte interruptPin = 3;
 
+int redPin = 13;
+int greenPin = 12;
+int bluePin = 11;
+
 volatile boolean button;
 unsigned long lastButton;
 int debounce = 500; //milli time comparison to debounce button
 
 boolean debug = false;
-
+boolean driving;
+long resendtimer;
+boolean resend = false;
 
 const int rows = 12;
 uint8_t queue [rows] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+uint8_t lastQueue [rows] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 uint8_t commandLookup[17] = {
   /* Each shift register reads one byte from two code readers of four bits (i.e. a nibble) each.
@@ -60,17 +67,17 @@ uint8_t commandLookup[17] = {
 
 void clearQueue() {
   for (int i = 0; i < rows; i++) { //clear the queues
-    queue[i] = 0;
+    queue[i] = ' ';
   }
 }
 
 void sendCommand() {
-  if (debug) {
-        for (int i = 0; i < rows; i++) {
-          Serial.print(i);
-          Serial.print(" = ");
-          Serial.println(queue[i]);
-        }
+  if (false) {
+    for (int i = 0; i < rows; i++) {
+      Serial.print(i);
+      Serial.print(" = ");
+      Serial.println(queue[i]);
+    }
     Serial.println("~~~~~~~~~~~~~~~~~~~~~~");
   }
   else {
@@ -115,6 +122,7 @@ void shiftIn() {
 
   }
   uint8_t interesting = 16;
+  queue[5] = 0;
   queue[11] = interesting; //last byte is an endbyte
 }
 
@@ -125,11 +133,24 @@ void buttonPress() {
   }
 }
 
+boolean compareQueues() { //returns true if the current block configuration is the same as the last one
+  for (int i = 0; i < rows; i++) {
+    if (queue[i] != lastQueue[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void setup() {
   //start serial
   Serial.begin(115200);
 
   //define pin modes
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+
   pinMode(latchPin, OUTPUT);
   pinMode(clockPin, OUTPUT);
   pinMode(debugPin, INPUT_PULLUP);
@@ -139,54 +160,68 @@ void setup() {
   button = false;
   lastButton = millis();
   clearQueue();
+  shiftIn();
 }
-
 
 void loop() {
   debug = !digitalRead(debugPin);
 
-  if (button) {
-    clearQueue();
-    shiftIn();
-    delay(10);
-    sendCommand();
-    button = false;
-
+  while (Serial.available() > 0) {
+    int inByte = Serial.read();
+    if (inByte == 's') {
+      driving = false;
+    } else if (inByte == 'g') {
+      driving = true;
+    }
   }
-}
 
-void buttonPress() {
-  detachInterrupt(digitalPinToInterrupt(interruptPin));
-  button = true;
-  strokes++;
-  delay(20);
-  attachInterrupt(digitalPinToInterrupt(interruptPin), buttonPress, FALLING);
-}
-
-void setup() {
-  //start serial
-  Serial.begin(9600);
-
-  //define pin modes
-  pinMode(latchPin, OUTPUT);
-  pinMode(clockPin, OUTPUT);
-  pinMode(dataPin, INPUT);
-  pinMode(interruptPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(interruptPin), buttonPress, FALLING);
-
-  strokes = 0;
-  wait = true;
-  button = false;
-  function = false;
-}
-
-
-void loop() {
-
-  if (button) {
-    clearQueue();
-    shiftIn();
+  if (driving) { //set button LEDs
+    digitalWrite(redPin, HIGH);
+    digitalWrite(greenPin, LOW);
+    digitalWrite(bluePin, LOW);
+    if (button) {
+      clearQueue();
+      queue[5] = 'n';
+      queue[0] = 'n';
+      sendCommand();
+      button = false;
+      resendtimer = millis();
+      resend = true;
+      shiftIn();
+      //driving = false;
+    }
   }
-  if (!wait) {
-    sendCommands();
+  else { //if not driving
+    digitalWrite(redPin, LOW);
+    digitalWrite(greenPin, HIGH);
+    digitalWrite(bluePin, LOW);
+
+    if (button) {
+      queue[5] = 'n'; //
+      sendCommand();
+      button = false;
+      driving = true;
+      //Serial.println("button");
+    } else {
+
+      if (!compareQueues()) {
+        resend = false;
+        sendCommand();
+        //Serial.println("compare");
+      }
+      if (resend) {
+        long elapsed = millis() - resendtimer;
+        if (elapsed >= 500){
+        resend = false;
+        sendCommand();
+        }
+      }
+    }
   }
+  for (int i = 0; i < rows; i++) {
+    lastQueue[i] = queue[i];
+  }
+  clearQueue();
+  shiftIn();
+  //delay(10);
+}

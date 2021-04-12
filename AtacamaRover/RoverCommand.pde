@@ -6,17 +6,19 @@ class RoverCommand { // should this extend Hexagon class?
   float radianDir;
   boolean reorient, drive, scan;
   boolean turnToHeading = true;
+  boolean execute;
   PVector xy;
   PImage icon;
   int headingCheckCt = 0;
 
-  RoverCommand(Hexagon h_, int cardinalDir_, boolean drive_, boolean scan_, String iconName) {
+  RoverCommand(Hexagon h_, int cardinalDir_, boolean drive_, boolean scan_, String iconName, boolean execute_) {
     String path = sketchPath() + "/data/icons/" + iconName;
     icon = loadImage(path);
     h = h_;
     xy = h.getXY();
     drive = drive_;
     scan = scan_;
+    execute = execute_;
     reorient = !drive_;
     while (cardinalDir_ < 0 || cardinalDir_ >= 6) {
       if (cardinalDir_ < 0) {
@@ -29,7 +31,8 @@ class RoverCommand { // should this extend Hexagon class?
     cardinalDir = cardinalDir_;
     float[] cardHtoTheta = {0, 60, 120, 180, 240, 300};
     radianDir = radians(cardHtoTheta[cardinalDir]);
-    h.fillin = true;
+    h.fillin = execute;
+    //println("rc created");
   }
 
   Hexagon getHex() {

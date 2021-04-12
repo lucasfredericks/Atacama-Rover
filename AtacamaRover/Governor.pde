@@ -67,6 +67,6 @@ class Governor {
 
 
   void updateRoverLocation(FiducialFound f) {
-    queue.updateLocation(f.getFiducialToCamera());
+    queue.updateLocation(f);
   }
 }

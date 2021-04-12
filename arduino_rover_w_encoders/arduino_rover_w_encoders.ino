@@ -28,13 +28,15 @@ long rSetpoint;
 float turnConst;
 float ticksPercm;
 
+long watchdog;
+
 boolean moveComplete = true;
 boolean turn = false;
 boolean stopped = false;
 const byte numChars = 8; //max array size for incoming serial data
 char receivedChars[numChars]; //buffer to receive serial chars
 float val = 0.0;
-char dir = 0;
+uint8_t dir = 0;
 boolean newData = false;
 
 void attachServos() {
@@ -102,7 +104,9 @@ void parseData() {
   char * strtokIndx; // this is used by strtok() as an index
 
   strtokIndx = strtok(receivedChars, ",");     // get the first part - the string
-  dir = receivedChars[0];
+  Serial.println(strtokIndx);
+  dir = atoi(strtokIndx);
+  Serial.println(dir);
 
   strtokIndx = strtok(NULL, ",");
   val = atof(strtokIndx);     // convert this part to a float
@@ -141,6 +145,9 @@ void setEncoderTargets(double lPosition, double rPosition) {
       rPID.Setpoint(rSetpoint);
     }
   }
+  else {
+    goToSleep();
+  }
 }
 void setGeometryConsts() {
   float wheelDiam = 7.0;
@@ -157,6 +164,8 @@ void setup() {
   lSetpoint = lEnc.read();
   rSetpoint = rEnc.read();
   setGeometryConsts();
+
+  watchdog = millis();
 
   attachServos();
   servoStraight();
@@ -190,6 +199,7 @@ void setup() {
 
 }
 void goToSleep() {
+  Serial.println('r');
   digitalWrite(nD2, LOW);
   detachServos();
   Serial.println('r');
@@ -203,6 +213,7 @@ void wakeUp() {
   //Serial.println("waking up");
   lPID.SetMode(1);
   rPID.SetMode(1);
+  watchdog = millis();
 }
 
 
@@ -211,10 +222,14 @@ void loop() {
   const double lPosition = lEnc.read();
   const double rPosition = rEnc.read();
 
+  if (millis() - watchdog >= 30000) { //30 second timer
+    goToSleep();
+    watchdog = millis();
+  }
   recvWithEndMarker();
   if (newData) {
-    Serial.println(dir);
-    Serial.println(val);
+    //Serial.println(dir);
+    //Serial.println(val);
     newData = false;
     moveComplete = false;
     wakeUp();
@@ -257,8 +272,8 @@ void loop() {
     analogWrite(M2PWM, abs(rOutput));
 
     if (abs(lOutput) < 20 && abs(rOutput) < 20) {
-        moveComplete = true;
-        goToSleep();
-      }
+      moveComplete = true;
+      goToSleep();
+    }
   }
 }
