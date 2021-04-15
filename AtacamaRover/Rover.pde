@@ -1,10 +1,8 @@
-class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
+class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
   Serial myPort;
   PApplet sketch;
   Hexgrid hexgrid;
   Queue queue;
-  DMatrixRMaj rMatrix;
-  double[] euler;
   float heading = 0;
   float targetHeading = 0;
   float dist = 0;
@@ -14,8 +12,11 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
   //boolean ready;
   float turnMOE = 10;     // margin of error for turning. Given in degrees and converted to radians in constructor
   String command;
+  String lastCommandStr;
   float cmdMagnitude; //if the rover is moving forward, this is given in cm. If it's turning, it is in radians
-  int checkCt;
+
+  int watchdog;
+  long handshakeTimer;
 
   //status variables
   boolean handshake;   // tracks acknowldgement from rover
@@ -25,8 +26,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     hexgrid = hexgrid_;
     //rMatrix = new DMatrixRMaj();
     //location = new PVector();
-    //destination = new PVector();
-    //euler = new double[2];
+    destination = new PVector();
     myPort = new Serial(sketch, serial, 9600);
     //destination = new PVector(.5*width, .5*height);
     location = new PVector(0, 0);
@@ -34,61 +34,89 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     //nudgeMOE = radians(nudgeMOE);
     //ready = true;
     handshake = true;
-    //watchdog = 6; //set watchdog high, so nothing will happen until the rover is located at least once
+    watchdog = 11; //set watchdog high, so nothing will happen until the rover is located at least once
   }
   void initQueue(Queue queue_) {
     queue = queue_;
   }
   void resetVars() {
-    command = "stop";
-    checkCt = 0;
+    //command = "stop";
+    println("reset rover vars");
+    //cmdMagnitude = 0;
     handshake = true;
+    handshakeTimer = millis();
   }
 
   void run() {
+
+    watchdog++;
 
     while (myPort.available()>0) {
 
       int inByte = myPort.read();
       if (inByte == 'r') {
-        //println("handshake");
-        handshake = true;
+        if (!handshake) {
+          print("handshake");
+          handshake = true;
+          handshakeTimer=millis();
+        }
       }
     }
+  }
 
+
+  void drive() {
+    watchdog = 0;
     if (queue.checkNew()) { //if the user has pressed the button, stop the current command
-      stop();
+      //stop();
       resetVars();
     }
-
-    //displayHeading();
+    //println("handshake: " + handshake);
+    //stop();
+    setCommand();
+    if (handshake && (millis()-handshakeTimer > 1000)) {
+      sendCommand();
+      handshake = false;
+    }
   }
-  void drive() {
-    if (handshake && queue.isExecutableCommand()) {
+
+  void setCommand() {
+    //println("Set command");
+    if (queue.areAnyCommandsExecutable()) {
+      while (!queue.isExecutableCommand()) {
+        println("queue 0 not executable");
+        queue.commandComplete();
+      }
+      queue.nextCommand(); // sets commandlist<0> to current command
       //println("drive");
       boolean turnBool = false; //boolean variables for wayfinding while driving (not about status of the current rovercommand)
       //boolean nudgeTurnBool = false;
       boolean driveBool = false;
       //boolean nudgeDriveBool = false;
+      destination = queue.getDestination();
+      float pxdist = PVector.dist(location, destination);
+      //set drive/turn variables
+      dist = (float) queue.getDistance();
+
+      if (pxdist >= hexSize/2) { //5 cm
+        driveBool = true;
+        turnBool = true;
+        queue.checkCt = 0;
+      } else {
+        driveBool = false;
+        //println("within target distance");
+      }
       targetHeading = queue.getHeading(); //
       targetHeading = normalizeRadians(targetHeading);
-      destination = queue.getDestination();
-      dist = (float) queue.getDistance();
-      //set drive/turn variables
       float ldelta = heading - targetHeading;
       float rdelta = targetHeading - heading;
-      ldelta = normalizeRadians(ldelta);
-      rdelta = normalizeRadians(rdelta);
+      ldelta = abs(normalizeRadians(ldelta));
+      rdelta = abs(normalizeRadians(rdelta));
 
-      if (min(abs(ldelta), abs(rdelta))>turnMOE) { 
+      if (min(ldelta, rdelta)>turnMOE) { 
         turnBool = true;
       } else { 
         turnBool = false;
-      }
-      if (dist >= 10) { //10 cm
-        driveBool = true;
-      } else {
-        driveBool = false;
       }
       if (turnBool) {
         if (abs(ldelta)<abs(rdelta)) {
@@ -102,15 +130,13 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
         command = "forward";
         cmdMagnitude = dist;
       } else {
+        println("move complete");
         queue.moveComplete();
-        resetVars();
       }
-
-      sendCommand();
-      handshake = false;
+    } else {
+      command = "stop";
     }
   }
-
 
   float normalizeRadians(float theta) {
     while (theta < 0 || theta > TWO_PI) {
@@ -138,22 +164,31 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
 
     if (commandByte == 'a' || commandByte == 'd' || commandByte == 'w' || commandByte == ' ') {
       String cmdString = commandByte + "," + cmdMagnitude;
-      myPort.write(cmdString + '\n');
-      //println("command: " + cmdString);
+      if (!cmdString.equals(lastCommandStr)) {
+        myPort.write(cmdString + '\n');
+        println("command (noByte): " + cmdString);
+        lastCommandStr = cmdString;
+      }
     }
   }
   void sendCommand(byte commandByte) {
 
     if (commandByte == 'a' || commandByte == 'd' || commandByte == 'w' || commandByte == ' ') {
       String cmdString = commandByte + "," + cmdMagnitude;
-      myPort.write(cmdString + '\n');
-      println("command: " + cmdString);
+      if (!cmdString.equals(lastCommandStr)) {
+        myPort.write(cmdString + '\n');
+        lastCommandStr = cmdString;
+        println("command (byte): " + cmdString);
+      }
     }
   }
   void stop() {
-    myPort.write(' ');
+    //myPort.write("0,0" + '\n');
+    println("stop");
     command = "stop";
+    cmdMagnitude = 0;
   }
+
   void displayHeading(PGraphics buffer) {
     buffer.beginDraw();
     buffer.pushMatrix();
@@ -174,6 +209,14 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     buffer.noStroke();
     buffer.ellipse(0, 0, 10, 10);
     buffer.popMatrix();
+    if (queue.isExecutableCommand()) {
+      buffer.pushMatrix();
+      PVector destination = queue.getDestination();
+      buffer.translate(destination.x*camScale, destination.y*camScale);
+      buffer.stroke(255, 0, 0);
+      buffer.ellipse(0, 0, 10, 10);
+      buffer.popMatrix();
+    }
     buffer.endDraw();
   }
 }

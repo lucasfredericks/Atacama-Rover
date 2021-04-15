@@ -20,12 +20,12 @@ int bluePin = 11;
 
 volatile boolean button;
 unsigned long lastButton;
-int debounce = 500; //milli time comparison to debounce button
+int debounce = 300; //milli time comparison to debounce button
+long resendTimer;
 
 boolean debug = false;
 boolean driving;
-long resendtimer;
-boolean resend = false;
+
 
 const int rows = 12;
 uint8_t queue [rows] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -72,6 +72,7 @@ void clearQueue() {
 }
 
 void sendCommand() {
+  resendTimer = millis();
   if (false) {
     for (int i = 0; i < rows; i++) {
       Serial.print(i);
@@ -161,67 +162,55 @@ void setup() {
   lastButton = millis();
   clearQueue();
   shiftIn();
+  sendCommand();
 }
 
 void loop() {
   debug = !digitalRead(debugPin);
 
   while (Serial.available() > 0) {
-    int inByte = Serial.read();
-    if (inByte == 's') {
+    uint8_t inByte = Serial.read();
+    //Serial.println(inByte);
+    if (inByte == 'g') {
       driving = false;
-    } else if (inByte == 'g') {
+    }
+    if (inByte == 'r') {
       driving = true;
     }
   }
 
-  if (driving) { //set button LEDs
-    digitalWrite(redPin, HIGH);
-    digitalWrite(greenPin, LOW);
-    digitalWrite(bluePin, LOW);
-    if (button) {
-      clearQueue();
-      queue[5] = 'n';
-      queue[0] = 'n';
-      sendCommand();
-      button = false;
-      resendtimer = millis();
-      resend = true;
-      shiftIn();
-      //driving = false;
-    }
-  }
-  else { //if not driving
-    digitalWrite(redPin, LOW);
-    digitalWrite(greenPin, HIGH);
-    digitalWrite(bluePin, LOW);
-
-    if (button) {
-      queue[5] = 'n'; //
-      sendCommand();
-      button = false;
-      driving = true;
-      //Serial.println("button");
-    } else {
-
-      if (!compareQueues()) {
-        resend = false;
-        sendCommand();
-        //Serial.println("compare");
-      }
-      if (resend) {
-        long elapsed = millis() - resendtimer;
-        if (elapsed >= 500){
-        resend = false;
-        sendCommand();
-        }
-      }
-    }
-  }
   for (int i = 0; i < rows; i++) {
     lastQueue[i] = queue[i];
   }
   clearQueue();
   shiftIn();
-  //delay(10);
+
+  if (driving) { //set button LEDs
+    digitalWrite(redPin, HIGH);
+    digitalWrite(greenPin, LOW);
+    digitalWrite(bluePin, LOW);
+  }
+  else { //if not driving
+    digitalWrite(redPin, LOW);
+    digitalWrite(greenPin, HIGH);
+    digitalWrite(bluePin, LOW);
+  }
+
+  if (button) {
+    queue[5] = 'n'; //
+    sendCommand();
+    button = false;
+
+  } else {
+    if (!compareQueues()) {
+      sendCommand();
+    }    else {
+      //Serial.println("compare");
+      long elapsed = millis() - resendTimer;
+
+      if (elapsed >= 200) {
+        sendCommand();
+      }
+    }
+  }
 }

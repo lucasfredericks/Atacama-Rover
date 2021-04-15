@@ -11,6 +11,7 @@ class RoverCommand { // should this extend Hexagon class?
   PImage icon;
   int headingCheckCt = 0;
 
+//Hexagon(Hexgrid hexgrid_, int hexQ_, int hexR_, int size_) {
   RoverCommand(Hexagon h_, int cardinalDir_, boolean drive_, boolean scan_, String iconName, boolean execute_) {
     String path = sketchPath() + "/data/icons/" + iconName;
     icon = loadImage(path);
@@ -19,7 +20,7 @@ class RoverCommand { // should this extend Hexagon class?
     drive = drive_;
     scan = scan_;
     execute = execute_;
-    reorient = !drive_;
+    reorient = true;
     while (cardinalDir_ < 0 || cardinalDir_ >= 6) {
       if (cardinalDir_ < 0) {
         cardinalDir_ += 6;

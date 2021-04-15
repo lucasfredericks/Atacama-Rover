@@ -6,8 +6,8 @@
 //Create objects
 ServoTimer2 servo1;
 ServoTimer2 servo2;
-Encoder rEnc(3, 6);
-Encoder lEnc(2, 5);
+Encoder lEnc(3, 6);
+Encoder rEnc(2, 5);
 
 
 //motor shield pin map
@@ -18,7 +18,7 @@ int M2DIR = 8; //Motor 2 direction input
 int M2PWM = 10; //Motor 2 speed input
 
 // Specify the links and initial tuning parameters for PID
-double Kp = .3, Ki = .0, Kd = .04;
+double Kp = .5, Ki = .005, Kd = 0.05;
 PID_v2 lPID(Kp, Ki, Kd, PID::Direct);
 PID_v2 rPID(Kp, Ki, Kd, PID::Direct);
 
@@ -26,13 +26,15 @@ PID_v2 rPID(Kp, Ki, Kd, PID::Direct);
 long lSetpoint;
 long rSetpoint;
 float turnConst;
-float ticksPercm;
+float ticksPermm;
 
 long watchdog;
+long sleepDelay;
+boolean sleepFlag;
 
 boolean moveComplete = true;
 boolean turn = false;
-boolean stopped = false;
+boolean sleeping = false;
 const byte numChars = 8; //max array size for incoming serial data
 char receivedChars[numChars]; //buffer to receive serial chars
 float val = 0.0;
@@ -104,9 +106,9 @@ void parseData() {
   char * strtokIndx; // this is used by strtok() as an index
 
   strtokIndx = strtok(receivedChars, ",");     // get the first part - the string
-  Serial.println(strtokIndx);
+  //Serial.println(strtokIndx);
   dir = atoi(strtokIndx);
-  Serial.println(dir);
+  //Serial.println(dir);
 
   strtokIndx = strtok(NULL, ",");
   val = atof(strtokIndx);     // convert this part to a float
@@ -122,7 +124,7 @@ void setEncoderTargets(double lPosition, double rPosition) {
 
   if (dir == 'w') {
     servoStraight();
-    int encDelta = int(val * ticksPercm);
+    int encDelta = int(val * ticksPermm);
     lSetpoint = lPosition - encDelta;
     rSetpoint = rPosition + encDelta;
     lPID.Setpoint(lSetpoint);
@@ -133,6 +135,7 @@ void setEncoderTargets(double lPosition, double rPosition) {
     servoTurn();
     int encDelta = int(val * turnConst);
     if (dir == 'a') {
+      //Serial.println("turning left");
       lSetpoint = lPosition + encDelta;
       rSetpoint = rPosition + encDelta;
       lPID.Setpoint(lSetpoint);
@@ -143,6 +146,7 @@ void setEncoderTargets(double lPosition, double rPosition) {
       rSetpoint = rPosition - encDelta;
       lPID.Setpoint(lSetpoint);
       rPID.Setpoint(rSetpoint);
+      //Serial.println("turning right");
     }
   }
   else {
@@ -150,12 +154,12 @@ void setEncoderTargets(double lPosition, double rPosition) {
   }
 }
 void setGeometryConsts() {
-  float wheelDiam = 7.0;
+  float wheelDiam = 75;
   float wheelCircum = wheelDiam * PI;
-  float wheelbaseRadius = 13.5;
+  float wheelbaseRadius = 130;
   int ticksPerRev = 3840;
-  ticksPercm = ticksPerRev / wheelCircum;
-  turnConst = ticksPercm * wheelbaseRadius;
+  ticksPermm = ticksPerRev / wheelCircum;
+  turnConst = ticksPermm * wheelbaseRadius;
 }
 
 void setup() {
@@ -166,6 +170,7 @@ void setup() {
   setGeometryConsts();
 
   watchdog = millis();
+  sleepDelay = millis();
 
   attachServos();
   servoStraight();
@@ -181,8 +186,8 @@ void setup() {
   digitalWrite(M2DIR, LOW);
   analogWrite(M2PWM, 0);
 
-  lPID.SetOutputLimits(-255, 255);
-  rPID.SetOutputLimits(-255, 255);
+  lPID.SetOutputLimits(-200, 200);
+  rPID.SetOutputLimits(-200, 200);
 
   lPID.Start(lEnc.read(),  // input
              0,                      // current output
@@ -199,23 +204,31 @@ void setup() {
 
 }
 void goToSleep() {
-  Serial.println('r');
-  digitalWrite(nD2, LOW);
-  detachServos();
-  Serial.println('r');
-  lPID.SetMode(0);
-  rPID.SetMode(0);
+  if (!sleeping) {
+    sleeping = true;
+    Serial.println('r');
+    digitalWrite(nD2, LOW);
+    detachServos();
+    lPID.SetMode(0);
+    rPID.SetMode(0);
+    delay(10);
+  }
 }
 
 void wakeUp() {
-  digitalWrite(nD2, HIGH);
-  attachServos();
-  //Serial.println("waking up");
-  lPID.SetMode(1);
-  rPID.SetMode(1);
-  watchdog = millis();
+  moveComplete = false;
+  sleepFlag = false;
+  if (sleeping) {
+    digitalWrite(nD2, HIGH);
+    attachServos();
+    //Serial.println("waking up");
+    lPID.SetMode(1);
+    rPID.SetMode(1);
+    watchdog = millis();
+    sleeping = false;
+    
+  }
 }
-
 
 void loop() {
 
@@ -231,7 +244,6 @@ void loop() {
     //Serial.println(dir);
     //Serial.println(val);
     newData = false;
-    moveComplete = false;
     wakeUp();
     setEncoderTargets(lPosition, rPosition);
   }
@@ -240,15 +252,19 @@ void loop() {
   const double rInput = rEnc.read();
   const double rOutput = rPID.Run(rInput);
 
-  if (false && millis() % 300 == 0) {
+  if (false && millis() % 300 == 0) { //debug print
     Serial.print("L: ");
     Serial.print(lSetpoint);
+    Serial.print(", ");
+    Serial.print(lPosition);
     Serial.print(", ");
     Serial.print(lInput);
     Serial.print(", ");
     Serial.print(lOutput);
     Serial.print(", R: ");
     Serial.print(rSetpoint);
+    Serial.print(", ");
+    Serial.print(lPosition);
     Serial.print(", ");
     Serial.print(rInput);
     Serial.print(", ");
@@ -271,9 +287,16 @@ void loop() {
     analogWrite(M1PWM, abs(lOutput));
     analogWrite(M2PWM, abs(rOutput));
 
-    if (abs(lOutput) < 20 && abs(rOutput) < 20) {
-      moveComplete = true;
-      goToSleep();
+    if ((abs(lOutput) < 20) && (abs(rOutput) < 20) && (sleepFlag = false)) {
+      sleepDelay = millis();
+      sleepFlag = true;
+    }
+    else if ( sleepFlag) {
+      if (millis() - sleepDelay > 300) {
+        moveComplete = true;
+        goToSleep();
+        sleepFlag = false;
+      }
     }
   }
 }

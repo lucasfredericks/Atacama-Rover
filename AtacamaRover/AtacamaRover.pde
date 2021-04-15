@@ -17,7 +17,7 @@ Governor governor1;
 
 int rover1ID = 6; // the fiducial binary identifier for rover 1
 
-int hexSize = 50;
+int hexSize = 35;
 int camWidth = 640;
 int camHeight = 480;  
 int camBufferWidth = 1280;
@@ -27,7 +27,7 @@ color bg = color(0, 0, 0, 0);
 color hover = color(255);
 PGraphics gridOutlines;
 Se3_F64 worldToCamera;
-double lambda = 150; // fiducial width is defined as 1. lambda coefficient converts arbitrary world units to mm
+double lambda = 150; // fiducial width is defined as 1. lambda coefficient converts arbitrary world units to cm
 double roverHeight = 25;
 //double zscale;
 CameraPinholeBrown intrinsic;
@@ -50,7 +50,7 @@ void setup() {
 
   printArray(Capture.list());
   surface.setSize(1920, 1080); //have to do this manually for detector to work
-  fullScreen(2);// specifying renderer here appears to break the detector
+  fullScreen(1);// specifying renderer here appears to break the detector
 
 
 
@@ -71,7 +71,7 @@ void initArena() {
       //println("fiducials found");
       List<FiducialFound> found = cvThread.getFiducials();
       for ( FiducialFound f : found ) {
-        println(f.getId());
+        //println(f.getId());
         //heptagon interior angle: 128.571 ~= .9 radians
         if ((int)f.getId()==1234) {
           println("arena found");

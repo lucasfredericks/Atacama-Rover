@@ -1,4 +1,4 @@
-import processing.serial.*; //<>// //<>// //<>// //<>// //<>// //<>// //<>//
+import processing.serial.*; //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
 import java.util.Iterator;
 import boofcv.processing.*;
 PGraphics GUI;
@@ -52,67 +52,67 @@ class Queue {
       inBuffer = myPort.readBytesUntil(interesting);
       myPort.clear();
       //println(inBuffer);
-      if (inBuffer == null || inBuffer[0] == 'n') {
-        //println("null stop");
-        myPort.write('s');
-        rover.stop();
-        initClearCommandList();
-        commandList.clear();
+      if (inBuffer == null || inBuffer.length != 12) { //throw out junk
         return;
-      } else if (inBuffer.length == 12) {
-        for (int i = 0; i < 5; i++) {
-          mainQueue[i] = inBuffer[i];
-          funcQueue[i] = inBuffer[i+6];
-        }
+      } 
+      boolean execute;
+      for (int i = 0; i < 5; i++) {
+        mainQueue[i] = inBuffer[i];
+        funcQueue[i] = inBuffer[i+6];
         parseCodingBlocks(mainQueue, funcQueue);
+      }
+      //println("parsing queue into byte list");
+      if (inBuffer[5] == 'n') {//if the user has pressed the button
+
+
+        execute = true;
+        println("button");
+        myPort.write('r'); // tell the control board to turn button red
+        //println("button red");
+        if (isExecutableCommand()) { //check if the rover is currently driving
+          println("the rover is driving");
+          myPort.write('g'); //tell the control board the rover is stopping
+          //println("button green");
+          rover.sendCommand((byte)' ');
+          println("stopping the rover");
+          initClearCommandList();
+          commandList.clear();
+          println("clearing queue");
+          return;
+        } 
         if (byteList.isEmpty()) { //
-          println("null stop");
-          myPort.write('s');
-          rover.stop();
+          println("new queue is empty. Stopping rover, resetting vars");
+          myPort.write('g');
+          //println("button green");
+          //rover.stop();
           initClearCommandList();
           commandList.clear();
           return;
         }
-        boolean execute;
-        //myPort.readBytes(inBuffer);
-        println(inBuffer);
-        //println("inbuffer[0]" + inBuffer[0]);
-        //println(inBuffer.length);
-
-        if (inBuffer[5] == 'n') {//the user has pressed the button
-
-          if (isExecutableCommand() || inBuffer[0] == 'n') { //if the rover is already driving:
-            execute = false;
-            println("stop received");
-            myPort.write('s');
-            rover.stop();
-            initClearCommandList();
-            commandList.clear();
-            return;
-          } else { // problem when it gets an executable command that is empty
-            //println("button");
-            execute = true;
-            newCommands=true;
-            println("data in -- execute");
-            myPort.write('g'); //tell the reader board that the rover is driving
-          }
+        //myPort.write('r');
+        //println("button red");
+        newCommands=true;
+        println("data in -- execute");
+      } else { //if the user has not pressed the button
+        if (isExecutableCommand()) {//if the rover is driving, ignore new commands
+          return;
         } else {
           execute = false;
+          newCommands=false;
           println("data in -- no execute");
-          myPort.write('s'); //tell the reader board that the rover is stopped
+          myPort.write('g'); //tell the reader board that the rover is stopped
+          //println("button green");
         }
-
-        parseCommandList(execute);
-        //println("parsing");
       }
+
+      parseCommandList(execute);
+      println("parsing");
     }
-    if (commandList.isEmpty()) {
-    }
+    nextCommand();
     updateGUI();
+    //println(commandList);
     //println("command list length: " + commandList.size());
   }
-
-
 
   void pickScanDest() {
     Hexagon h;
@@ -135,7 +135,7 @@ class Queue {
       if (!function) {
         tempByte = mainQueue[cmdCount];
         if (tempByte == 113) { //"function"
-          println("Function");
+          //println("Function");
           function = true;
         } else if (isValid(tempByte, function)) {
           byteList.add(tempByte);
@@ -165,22 +165,22 @@ class Queue {
       rc.h.fillin = false;
     }
   }
-  void parseCommandList(boolean execute) {
+  void parseCommandList(boolean execute) { //freezes when rover is not in eligible hex
+    initClearCommandList();
     commandList.clear();
     //println(byteList);
     //if (rover.watchdog <= 5) {
     if (true) {
       PVector lastXY = rover.location;
       int cardinalHeading = roundHeading(rover.heading);
-      Hexagon hexLoc = hexgrid.pixelToHex((int)lastXY.x, (int)lastXY.y);
-      PVector hexKey = new PVector();
-      hexKey.set(hexLoc.getKey()); //freezes if rover is offscreen
-
-      initClearCommandList();
+      //Hexagon hexLoc = hexgrid.pixelToHex((int)lastXY.x, (int)lastXY.y);
+      PVector hexKey =hexgrid.pixelToKey(lastXY);
       for (byte cmd : byteList) {
+        PVector lastKey = hexKey.copy();
         String iconName = "";
         boolean drive = false;
         boolean scan = false;
+        boolean execute_ = execute;
         if (cmd == 119) { // 'w' forward
           drive = true;
           iconName = "forward.jpg";
@@ -215,14 +215,13 @@ class Queue {
         }
         if (hexgrid.checkHex(hexKey)) {
           Hexagon h = hexgrid.getHex(hexKey);
-          RoverCommand rc = new RoverCommand(h, cardinalHeading, drive, scan, iconName, execute);
-          //Hexagon h_, int cardinalDir_, boolean drive_, boolean scan_, String iconName
+          RoverCommand rc = new RoverCommand(h, cardinalHeading, drive, scan, iconName, execute_);
           commandList.add(rc);
-          //println("new command added");
+          println("new command added " + execute_);
         }
-      }
-      if (isActiveCommand()) {
-        currentCommand = commandList.get(0);
+        //Hexagon h_, int cardinalDir_, boolean drive_, boolean scan_, String iconName
+
+        //}
       }
     }
   }
@@ -286,7 +285,7 @@ class Queue {
 
   boolean checkNext() {
     if (commandList.isEmpty()) {
-      myPort.write('s');
+      myPort.write('g');
       println("empty");
       return false;
     } else {
@@ -297,6 +296,7 @@ class Queue {
   boolean checkNew() {
     if (newCommands) {
       newCommands = false;
+      nextCommand();
       return true;
     } else {
       return false;
@@ -310,6 +310,17 @@ class Queue {
   boolean isExecutableCommand() { //return true if the queue is executable
     if (isActiveCommand()) {
       RoverCommand rc = commandList.get(0);
+      if (rc == null) {
+        return false;
+      } else if (rc.execute) {
+        return true;
+      }
+    }
+    return false;
+  }
+  boolean areAnyCommandsExecutable() {
+
+    for (RoverCommand rc : commandList) {
       if (rc.execute) {
         return true;
       }
@@ -318,12 +329,12 @@ class Queue {
   }
   float getHeading() {
     if (currentCommand.driveStatus()) {
-      if (checkCt < 1) { //only calculate the heading once bc the angles get extreme when close to the destination
+      if (checkCt < 3) { //only calculate the heading 4x bc the angles get extreme when close to the destination
+        //if (true) {
         PVector destination = currentCommand.getXY();
         float dy = destination.y - location.y;
         float dx = destination.x - location.x;
         moveStartLocation.set(location);
-        commandTotalDistance = abs(PVector.dist(location, destination));
         destinationHeading = (atan2(dy, dx)+.5*PI);
         while (destinationHeading < 0 || destinationHeading > TWO_PI) {
           if (destinationHeading < 0) {
@@ -337,6 +348,7 @@ class Queue {
       }
     } else if (currentCommand.reorientStatus()) { //if drive portion is complete, check for reorientation turns
       destinationHeading = currentCommand.getRadianDir();
+      checkCt = 0;
       moveStartLocation.set(location); //set the destination to the rover's current position
     } else {
       destinationHeading = rover.heading;
@@ -356,10 +368,25 @@ class Queue {
 
   void updateLocation(FiducialFound f) {
     roverToCamera=f.getFiducialToCamera();
-    location.x = ((float) f.getImageLocation().x);
-    location.y = ((float) f.getImageLocation().y);
+    DMatrixRMaj rMatrix = f.getFiducialToCamera().getR();
+    double[] euler;
+    euler = ConvertRotation3D_F64.matrixToEuler(rMatrix, EulerType.XYZ, (double[])null);
+    float heading = (float) euler[2]; // - .5*PI;
+    while (heading < 0 || heading > TWO_PI) {
+      if (heading < 0) {
+        heading+= TWO_PI;
+      }
+      if (heading > TWO_PI) {
+        heading -= TWO_PI;
+      }
+    }
+    rover.heading = heading;
+    location.set((float)f.getImageLocation().x, (float)f.getImageLocation().y);
     rover.location = location;
-    rover.drive();
+    PVector hexID = hexgrid.pixelToKey(location);
+    if (hexgrid.checkHex(hexID)) {
+      rover.drive();
+    }
   }
   PVector getDestination() {
     if (currentCommand.driveStatus()) {
@@ -370,8 +397,8 @@ class Queue {
     }
   }
   double getDistance() {
-    Vector3D_F64 translation = roverToCamera.getT();
-    double dist = currentCommand.h.getDist(translation);
+    //Vector3D_F64 translation = roverToCamera.getT();
+    double dist = currentCommand.h.getDist(roverToCamera);
     return dist;
   }
 
@@ -396,21 +423,26 @@ class Queue {
 
   void commandComplete() {
     checkCt = 0;
+    println("command complete");
     if (!commandList.isEmpty()) {
       commandList.remove(0);
+      println("removing last command");
     }
     nextCommand();
   }
   void nextCommand() {
     if (!commandList.isEmpty()) {
       currentCommand = commandList.get(0);
+      //println("setting next command");
       if (isExecutableCommand()) {
-        myPort.write('g');
-        println("driving");
+        myPort.write('r');
+        //println("button red");
       }
     } else {
-      myPort.write('s');
-      println("not driving");
+      myPort.write('g');
+      //println("button green");
+      currentCommand = null;
+      //println("cc null");
     }
   }
 
@@ -427,7 +459,7 @@ class Queue {
     } else if (tempByte == 101) { // 'e' scan for life
       return true;
     } else if (tempByte == 32) { // ' ' for stop
-      rover.stop();
+      //rover.stop();
       return false;
     } else if (!function && tempByte ==  113) {// 'q' queue function ignores recursive functions
       return true;

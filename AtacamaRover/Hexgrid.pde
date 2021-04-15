@@ -125,6 +125,14 @@ class Hexgrid {
     Hexagon h = allHexes.get(hexID);
     return h;
   }
+  PVector pixelToKey(PVector location){
+    PVector hexID = new PVector();
+    hexID.x = (2./3*location.x)/hexSize;
+    hexID.z = (-1./3 * location.x + sqrt(3)/3 * location.y)/hexSize;
+    hexID.y = (-hexID.x - hexID.z);
+    hexID = cubeRound(hexID);
+    return hexID;
+  }
 
   Hexagon pixelToHex(PVector location) {   //find which hex a specified pixel lies in
     PVector hexID = new PVector();

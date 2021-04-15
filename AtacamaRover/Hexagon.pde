@@ -8,7 +8,7 @@ class Hexagon {
   boolean changed;
   PVector id;
   PVector pixelxy;
-  Vector3D_F64 rwCoords;
+  Point2D_F64 normCoords;
   boolean occupied = false;
   boolean fillin = false;
   int blinkAlpha = 0;
@@ -34,7 +34,9 @@ class Hexagon {
     scaledY = pixelY*camScale;
     scaledSize = scale*size;
     //rwCoords = new Vector3D_F64();
-    rwCoords = hexgrid.pixelToWorld(pixelxy).toVector();
+    normCoords = new Point2D_F64(pixelxy.x, pixelxy.y);
+    PerspectiveOps.convertPixelToNorm(intrinsic, normCoords, normCoords);
+    //.pixelToWorld(pixelxy).toVector();
     id = new PVector(hexX, hexY, hexZ);
     inBounds = true;
     changed = true;
@@ -138,9 +140,15 @@ class Hexagon {
   PVector getXY() {
     return (pixelxy);
   }
-  double getDist(Vector3D_F64 roverLoc) {
-    rwCoords.setZ(roverLoc.z); 
-    double dist = roverLoc.distance(rwCoords)*lambda;
+  double getDist(Se3_F64 roverToCamera) {
+    //Point3D_F64 rwLoc = new Point3D_F64();
+    Point3D_F64 rwCoords = new Point3D_F64(normCoords.x, normCoords.y, 1); //
+    //PerspectiveOps.convertPixelToNorm(intrinsic, px, px);
+    //rwLoc.set(px.x, px.y, 1);
+    Vector3D_F64 roverLoc = roverToCamera.getT();
+    rwCoords.scale(roverLoc.z); 
+    //SePointOps_F64.transformReverse(roverToCamera, rwCoords, rwCoords);
+    double dist = roverLoc.distance(rwCoords)*lambda*10;
     return dist;
   }
 }
