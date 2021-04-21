@@ -18,7 +18,7 @@ int M2DIR = 8; //Motor 2 direction input
 int M2PWM = 10; //Motor 2 speed input
 
 // Specify the links and initial tuning parameters for PID
-double Kp = .5, Ki = .005, Kd = 0.05;
+double Kp = .5, Ki = .05, Kd = 0.03;
 PID_v2 lPID(Kp, Ki, Kd, PID::Direct);
 PID_v2 rPID(Kp, Ki, Kd, PID::Direct);
 
@@ -30,7 +30,6 @@ float ticksPermm;
 
 long watchdog;
 long sleepDelay;
-boolean sleepFlag;
 
 boolean moveComplete = true;
 boolean turn = false;
@@ -116,9 +115,9 @@ void parseData() {
 
 }
 void setEncoderTargets(double lPosition, double rPosition) {
-  Serial.println("setting encoder targets");
-  Serial.println(dir);
-  Serial.println(val);
+  //  Serial.println("setting encoder targets");
+  //  Serial.println(dir);
+  //  Serial.println(val);
   attachServos();
 
 
@@ -205,19 +204,19 @@ void setup() {
 }
 void goToSleep() {
   if (!sleeping) {
-    sleeping = true;
+
     Serial.println('r');
     digitalWrite(nD2, LOW);
     detachServos();
     lPID.SetMode(0);
     rPID.SetMode(0);
     delay(10);
+    sleeping = true;
   }
 }
 
 void wakeUp() {
   moveComplete = false;
-  sleepFlag = false;
   if (sleeping) {
     digitalWrite(nD2, HIGH);
     attachServos();
@@ -226,7 +225,7 @@ void wakeUp() {
     rPID.SetMode(1);
     watchdog = millis();
     sleeping = false;
-    
+
   }
 }
 
@@ -235,7 +234,10 @@ void loop() {
   const double lPosition = lEnc.read();
   const double rPosition = rEnc.read();
 
-  if (millis() - watchdog >= 30000) { //30 second timer
+  if (millis() - watchdog >= 5000) { //30 second timer
+    if (sleeping) {
+      Serial.println('r');
+    }
     goToSleep();
     watchdog = millis();
   }
@@ -287,16 +289,9 @@ void loop() {
     analogWrite(M1PWM, abs(lOutput));
     analogWrite(M2PWM, abs(rOutput));
 
-    if ((abs(lOutput) < 20) && (abs(rOutput) < 20) && (sleepFlag = false)) {
-      sleepDelay = millis();
-      sleepFlag = true;
-    }
-    else if ( sleepFlag) {
-      if (millis() - sleepDelay > 300) {
-        moveComplete = true;
-        goToSleep();
-        sleepFlag = false;
-      }
+    if ((abs(lOutput) < 20) && (abs(rOutput) < 20)) {
+      moveComplete = true;
+      goToSleep();
     }
   }
 }

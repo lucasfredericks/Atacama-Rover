@@ -54,7 +54,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     while (myPort.available()>0) {
 
       int inByte = myPort.read();
-      if (inByte == 'r') {
+      if (inByte == 'r') { //<>//
         if (!handshake) {
           print("handshake");
           handshake = true;
@@ -98,12 +98,13 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
       //set drive/turn variables
       dist = (float) queue.getDistance();
 
-      if (pxdist >= hexSize/2) { //5 cm
+      if (pxdist >= hexSize) { //5 cm
         driveBool = true;
         turnBool = true;
         queue.checkCt = 0;
       } else {
         driveBool = false;
+        queue.checkCt = 1;
         //println("within target distance");
       }
       targetHeading = queue.getHeading(); //

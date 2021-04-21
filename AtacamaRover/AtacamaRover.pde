@@ -17,9 +17,9 @@ Governor governor1;
 
 int rover1ID = 6; // the fiducial binary identifier for rover 1
 
-int hexSize = 35;
-int camWidth = 640;
-int camHeight = 480;  
+int hexSize = 65;
+int camWidth = 1600;
+int camHeight = 1200;  
 int camBufferWidth = 1280;
 int camBufferHeight = 960;
 float camScale;
@@ -41,7 +41,7 @@ void setup() {
   //cardList = new CardList();
   String filePath = sketchPath() + "/data";
   intrinsic = CalibrationIO.load(new File(filePath, "intrinsic.yaml"));
-  cam = new Capture(this, camWidth, camHeight, "pipeline: ksvideosrc device-index=0 ! video/x-raw,width=640,height=480");
+  cam = new Capture(this, camWidth, camHeight, "pipeline: ksvideosrc ! image/jpeg, width=1600, height=1200, framerate=30/1 ! jpegdec ! videoconvert");
   cam.start();
   cvThread = new CVThread(intrinsic);
   cvThread.start();
@@ -81,7 +81,7 @@ void initArena() {
           Point2D_F64 [] pxCorners = new Point2D_F64[7];
           for (int i = 0; i < 7; i++) {
             float theta = i*.9;
-            rwcorners[i] = new Point3D_F64(150*cos(theta)/lambda, 150*sin(theta)/lambda, roverHeight/lambda);
+            rwcorners[i] = new Point3D_F64(125*cos(theta)/lambda,125*sin(theta)/lambda, roverHeight/lambda);
             pxCorners[i] = new Point2D_F64(0, 0);
             SePointOps_F64.transform(worldToCamera, rwcorners[i], rwcorners[i]);
             PerspectiveOps.convertNormToPixel(intrinsic, rwcorners[i].x/rwcorners[i].z, rwcorners[i].y/rwcorners[i].z, pxCorners[i]);
@@ -127,7 +127,7 @@ void draw() {
   image(gridOutlines, 0, 0);
   image(governor1.displayHUD(), 0, 0);
   pushMatrix();
-  String stats = ("framerate: " + int(frameRate) + ",  CV latency: " + cvThread.latencyRatio);
+  String stats = ("framerate: " + int(frameRate) + ",  CV latency: " + cvThread.latencyRatio + ", watchdog: " + governor1.getWatchdog());
   textSize(15);
   fill(0);
   translate(20, height-20);

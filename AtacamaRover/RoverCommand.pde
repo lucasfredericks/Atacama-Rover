@@ -20,7 +20,7 @@ class RoverCommand { // should this extend Hexagon class?
     drive = drive_;
     scan = scan_;
     execute = execute_;
-    reorient = true;
+    reorient = !drive;
     while (cardinalDir_ < 0 || cardinalDir_ >= 6) {
       if (cardinalDir_ < 0) {
         cardinalDir_ += 6;

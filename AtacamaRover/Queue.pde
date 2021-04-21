@@ -99,14 +99,14 @@ class Queue {
         } else {
           execute = false;
           newCommands=false;
-          println("data in -- no execute");
+          //println("data in -- no execute");
           myPort.write('g'); //tell the reader board that the rover is stopped
           //println("button green");
         }
       }
 
       parseCommandList(execute);
-      println("parsing");
+      //println("parsing");
     }
     nextCommand();
     updateGUI();
@@ -217,7 +217,7 @@ class Queue {
           Hexagon h = hexgrid.getHex(hexKey);
           RoverCommand rc = new RoverCommand(h, cardinalHeading, drive, scan, iconName, execute_);
           commandList.add(rc);
-          println("new command added " + execute_);
+          //println("new command added " + execute_);
         }
         //Hexagon h_, int cardinalDir_, boolean drive_, boolean scan_, String iconName
 
@@ -329,7 +329,7 @@ class Queue {
   }
   float getHeading() {
     if (currentCommand.driveStatus()) {
-      if (checkCt < 3) { //only calculate the heading 4x bc the angles get extreme when close to the destination
+      if (checkCt < 1) { //only calculate the heading 4x bc the angles get extreme when close to the destination
         //if (true) {
         PVector destination = currentCommand.getXY();
         float dy = destination.y - location.y;
