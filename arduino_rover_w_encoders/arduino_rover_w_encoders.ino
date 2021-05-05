@@ -4,21 +4,42 @@
 #include <Encoder.h>
 
 //Create objects
-ServoTimer2 servo1;
-ServoTimer2 servo2;
+ServoTimer2 NEservo;
+ServoTimer2 SWservo;
+ServoTimer2 NWservo;
+ServoTimer2 SEservo;
+
 Encoder lEnc(3, 6);
 Encoder rEnc(2, 5);
 
 
 //motor shield pin map
 int nD2 = 4; //Tri-state disables both outputs of both motor channels when LOW;
-int M1DIR = 7; //Motor 1 direction input
+int M1DIR = 15;// 7; //Motor 1 direction input
 int M1PWM = 9; //Motor 1 speed input
-int M2DIR = 8; //Motor 2 direction input
+int M2DIR = 14;// 8; //Motor 2 direction input
 int M2PWM = 10; //Motor 2 speed input
 
+int NEservoPin = 7; //analog 5
+int SWservoPin = 12; //analog 4
+int NWservoPin = 8; //analog 3
+int SEservoPin = 11; //analog 2
+
+int servoNEStraight = 30;
+int servoNETurn = 80;
+
+int servoSWStraight = 30;
+int servoSWTurn = 70;
+
+int servoNWStraight = 130;
+int servoNWTurn = 80;
+
+int servoSEStraight = 130;
+int servoSETurn = 90;
+
+
 // Specify the links and initial tuning parameters for PID
-double Kp = .5, Ki = .05, Kd = 0.03;
+double Kp = .55, Ki = .05, Kd = 0.05;
 PID_v2 lPID(Kp, Ki, Kd, PID::Direct);
 PID_v2 rPID(Kp, Ki, Kd, PID::Direct);
 
@@ -41,34 +62,55 @@ uint8_t dir = 0;
 boolean newData = false;
 
 void attachServos() {
-  if (!servo1.attached()) {
-    servo1.attach(11);
+
+  if (!NEservo.attached()) {
+    NEservo.attach(NEservoPin);
   }
-  if (!servo2.attached()) {
-    servo2.attach(13);
+  if (!SWservo.attached()) {
+    SWservo.attach(SWservoPin);
+  }
+  if (!SEservo.attached()) {
+    SEservo.attach(SEservoPin);
+  }
+  if (!NWservo.attached()) {
+    NWservo.attach(NWservoPin);
   }
 }
 void detachServos() {
-  if (servo1.attached()) {
-    servo1.detach();
+  if (NEservo.attached()) {
+    NEservo.detach();
   }
-  if (servo2.attached()) {
-    servo2.detach();
+  if (SWservo.attached()) {
+    SWservo.detach();
+  }
+  if (SEservo.attached()) {
+    SEservo.detach();
+  }
+  if (NWservo.attached()) {
+    NWservo.detach();
   }
 }
 void servoTurn() {
+
+  /*The maximum pulsewidth is 2250 and minimum is 750.
+    Which would mean 750 is for 0 degree and 2250 is for 180 degree.
+  */
   turn = true;
   attachServos();
-  servo1.write(1667); // 11
-  servo2.write(1200); // 13
-  delay(100);
+  NEservo.write(servoNETurn);
+  SWservo.write(servoSWTurn);
+  SEservo.write(servoSETurn);
+  NWservo.write(servoNWTurn);
+  delay(200);
 }
 void servoStraight() {
   turn = false;
   attachServos();
-  servo1.write(768);
-  servo2.write(2167);
-  delay(100);
+  NEservo.write(servoNEStraight);
+  SWservo.write(servoSWStraight);
+  SEservo.write(servoSEStraight);
+  NWservo.write(servoNWStraight);
+  delay(200);
 }
 void dontMove() {
   analogWrite(M1PWM, 0);
@@ -153,15 +195,25 @@ void setEncoderTargets(double lPosition, double rPosition) {
   }
 }
 void setGeometryConsts() {
-  float wheelDiam = 75;
+  float wheelDiam = 65;
   float wheelCircum = wheelDiam * PI;
-  float wheelbaseRadius = 130;
+  float wheelbaseRadius = 145;
   int ticksPerRev = 3840;
   ticksPermm = ticksPerRev / wheelCircum;
   turnConst = ticksPermm * wheelbaseRadius;
 }
 
 void setup() {
+
+  servoNETurn = map(servoNETurn, 0, 180, 750, 2250);
+  servoNWTurn = map(servoNWTurn, 0, 180, 750, 2250);
+  servoSETurn = map(servoSETurn, 0, 180, 750, 2250);
+  servoSWTurn = map(servoSWTurn, 0, 180, 750, 2250);
+
+  servoNEStraight= map(servoNEStraight, 0, 180, 750, 2250);
+  servoNWStraight= map(servoNWStraight, 0, 180, 750, 2250);
+  servoSEStraight= map(servoSEStraight, 0, 180, 750, 2250);
+  servoSWStraight= map(servoSWStraight, 0, 180, 750, 2250);
 
   Serial.begin(9600);
   lSetpoint = lEnc.read();
@@ -173,6 +225,12 @@ void setup() {
 
   attachServos();
   servoStraight();
+  while(false){
+    servoTurn();
+    delay(3000);
+    servoStraight();
+    delay(3000);    
+  }
 
   pinMode(M1DIR, OUTPUT);
   pinMode(M1PWM, OUTPUT);
