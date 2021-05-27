@@ -20,15 +20,13 @@ class Queue {
   Se3_F64 roverToCamera;
   PVector moveStartLocation;
 
-  ArrayList<Byte> byteList;
-  ArrayList<RoverCommand> commandList;
-
+  //ArrayList<Byte> byteList;
+  CommandList commandList;
 
   Queue(PApplet sketch_, CardList cardList_, Hexgrid hexgrid_, String serial, PGraphics GUI_) {
     cardList = cardList_;
     hexgrid = hexgrid_;
-    byteList = new ArrayList<Byte>();
-    commandList = new ArrayList<RoverCommand>();
+    //    byteList = new ArrayList<Byte>();
     newCommands = false;
     sketch = sketch_;
     GUI = GUI_;
@@ -36,6 +34,7 @@ class Queue {
     moveStartLocation = new PVector();
     pickScanDest();
     location = new PVector(camWidth/2, camHeight/2);
+    commandList = new CommandList(hexgrid);
   }
 
   void initRover(Rover rover_) {
@@ -59,54 +58,32 @@ class Queue {
       for (int i = 0; i < 5; i++) {
         mainQueue[i] = inBuffer[i];
         funcQueue[i] = inBuffer[i+6];
-        parseCodingBlocks(mainQueue, funcQueue);
       }
       //println("parsing queue into byte list");
       if (inBuffer[5] == 'n') {//if the user has pressed the button
-
-
-        execute = true;
-        println("button");
-        myPort.write('r'); // tell the control board to turn button red
-        //println("button red");
-        if (isExecutableCommand()) { //check if the rover is currently driving
-          println("the rover is driving");
-          myPort.write('g'); //tell the control board the rover is stopping
-          //println("button green");
-          rover.sendCommand((byte)' ');
-          println("stopping the rover");
-          initClearCommandList();
-          commandList.clear();
-          println("clearing queue");
-          return;
-        } 
-        if (byteList.isEmpty()) { //
-          println("new queue is empty. Stopping rover, resetting vars");
-          myPort.write('g');
-          //println("button green");
-          //rover.stop();
-          initClearCommandList();
-          commandList.clear();
-          return;
+        if (commandList.isExecutableCommand()) {
+          execute = false;
+        } else {
+          execute = true;
         }
-        //myPort.write('r');
-        //println("button red");
-        newCommands=true;
-        println("data in -- execute");
-      } else { //if the user has not pressed the button
-        if (isExecutableCommand()) {//if the rover is driving, ignore new commands
+      } else { //if the user has not pressed the button, the arduino will send periodic updates anyway
+        if (commandList.isExecutableCommand()) { //if the rover is driving and the user hasn't pressed the button,
           return;
         } else {
           execute = false;
-          newCommands=false;
-          //println("data in -- no execute");
-          myPort.write('g'); //tell the reader board that the rover is stopped
-          //println("button green");
         }
       }
-
-      parseCommandList(execute);
-      //println("parsing");
+      if (execute) {
+        myPort.write('r'); //button red
+        newCommands = true;
+      } else {
+        myPort.write('g'); //button green
+        newCommands = false;
+      }
+      int cardinalHeading = roundHeading(rover.heading);
+      //Hexagon hexLoc = hexgrid.pixelToHex((int)lastXY.x, (int)lastXY.y);
+      PVector hexKey =hexgrid.pixelToKey(rover.location);
+      commandList.createList(mainQueue, funcQueue, hexKey, cardinalHeading, execute);
     }
     nextCommand();
     updateGUI();
@@ -120,110 +97,8 @@ class Queue {
     do {
       Object randHexKey = keys[new Random().nextInt(keys.length)];
       h = hexgrid.getHex((PVector)randHexKey);
-    } while (!h.inBounds && h!= scanDest);
+    } while (h!= scanDest);
     scanDest = h;
-  }
-  void parseCodingBlocks( byte[] mainQueue, byte[] funcQueue ) {
-    boolean function = false;
-    int cmdCount = 0;
-    int funcCount = 0;
-    byte tempByte;
-
-    byteList.clear();
-
-    while (cmdCount < 5) {
-      if (!function) {
-        tempByte = mainQueue[cmdCount];
-        if (tempByte == 113) { //"function"
-          //println("Function");
-          function = true;
-        } else if (isValid(tempByte, function)) {
-          byteList.add(tempByte);
-        }
-        if (!function) {
-          cmdCount++;
-        }
-      }
-      if (function) {
-        while (funcCount < 5) {
-          tempByte = funcQueue[funcCount];
-          if (isValid(tempByte, function)) {
-            { //ignore recursive functions and invalid commands
-              byteList.add(tempByte);
-            }
-          }
-          funcCount++;
-        }
-        function = false;
-        funcCount = 0;
-        cmdCount++;
-      }
-    }
-  }
-  void initClearCommandList() {
-    for (RoverCommand rc : commandList) {
-      rc.h.fillin = false;
-    }
-  }
-  void parseCommandList(boolean execute) { //freezes when rover is not in eligible hex
-    initClearCommandList();
-    commandList.clear();
-    //println(byteList);
-    //if (rover.watchdog <= 5) {
-    if (true) {
-      PVector lastXY = rover.location;
-      int cardinalHeading = roundHeading(rover.heading);
-      //Hexagon hexLoc = hexgrid.pixelToHex((int)lastXY.x, (int)lastXY.y);
-      PVector hexKey =hexgrid.pixelToKey(lastXY);
-      for (byte cmd : byteList) {
-        PVector lastKey = hexKey.copy();
-        String iconName = "";
-        boolean drive = false;
-        boolean scan = false;
-        boolean execute_ = execute;
-        if (cmd == 119) { // 'w' forward
-          drive = true;
-          iconName = "forward.jpg";
-        } else if (cmd == 97) { // 'a' counterclockwise
-          drive = false;
-          iconName = "counterclockwise.jpg";
-          cardinalHeading -= 1;
-        } else if (cmd == 115) { // 's' back
-          iconName = "uturn.jpg";
-          drive = false;
-          cardinalHeading += 3;
-        } else if (cmd == 100) { // 'd' right/clockwise
-          iconName = "clockwise.jpg";
-          drive = false;
-          cardinalHeading += 1;
-        } else if (cmd==101) { // 'e' scan for life
-          iconName = "scan.jpg";
-          drive = false;
-          scan = true;
-        }
-        while (cardinalHeading < 0 || cardinalHeading >= 6) {
-          if (cardinalHeading < 0) {
-            cardinalHeading += 6;
-          }
-          if (cardinalHeading >=6) {
-            cardinalHeading -= 6;
-          }
-        }
-        if (drive) {
-
-          hexKey.add(hexgrid.neighbors[cardinalHeading]);
-        }
-        if (hexgrid.checkHex(hexKey)) {
-          Hexagon h = hexgrid.getHex(hexKey);
-          RoverCommand rc = new RoverCommand(h, cardinalHeading, drive, scan, iconName, execute_);
-          commandList.add(rc);
-          //println("new command added " + execute_);
-        }
-        //Hexagon h_, int cardinalDir_, boolean drive_, boolean scan_, String iconName
-
-        //}
-      }
-    }
   }
   int roundHeading(float heading_) {
     int cHeading = 0;
@@ -302,31 +177,7 @@ class Queue {
       return false;
     }
   }
-  boolean isActiveCommand() {
-    return(!commandList.isEmpty());
-    //check whether there is a command underway
-  }
 
-  boolean isExecutableCommand() { //return true if the queue is executable
-    if (isActiveCommand()) {
-      RoverCommand rc = commandList.get(0);
-      if (rc == null) {
-        return false;
-      } else if (rc.execute) {
-        return true;
-      }
-    }
-    return false;
-  }
-  boolean areAnyCommandsExecutable() {
-
-    for (RoverCommand rc : commandList) {
-      if (rc.execute) {
-        return true;
-      }
-    }
-    return false;
-  }
   float getHeading() {
     if (currentCommand.driveStatus()) {
       if (checkCt < 1) { //only calculate the heading 4x bc the angles get extreme when close to the destination
@@ -443,28 +294,6 @@ class Queue {
       //println("button green");
       currentCommand = null;
       //println("cc null");
-    }
-  }
-
-  boolean isValid(byte tempByte, boolean function) {
-
-    if (tempByte == 119) {    // 'w' forward
-      return true;
-    } else if (tempByte ==97) { // 'a' counterclockwise
-      return true;
-    } else if (tempByte == 115) { // 's' back
-      return true;
-    } else if (tempByte == 100) { // 'd' right/clockwise
-      return true;
-    } else if (tempByte == 101) { // 'e' scan for life
-      return true;
-    } else if (tempByte == 32) { // ' ' for stop
-      //rover.stop();
-      return false;
-    } else if (!function && tempByte ==  113) {// 'q' queue function ignores recursive functions
-      return true;
-    } else {
-      return false;
     }
   }
 }

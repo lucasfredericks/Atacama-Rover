@@ -1,26 +1,22 @@
 //class to hold command info for each rover step //<>//
 
-class RoverCommand { // should this extend Hexagon class?
-  Hexagon h;
+class RoverCommand extends Hexagon { // should this extend Hexagon class?
   int cardinalDir;
   float radianDir;
-  boolean reorient, drive, scan;
+  boolean reorient, drive, function, execute, inBounds;
   boolean turnToHeading = true;
-  boolean execute;
-  PVector xy;
+  boolean scan = false;
+  //PVector xy;
   PImage icon;
   int headingCheckCt = 0;
 
-//Hexagon(Hexgrid hexgrid_, int hexQ_, int hexR_, int size_) {
-  RoverCommand(Hexagon h_, int cardinalDir_, boolean drive_, boolean scan_, String iconName, boolean execute_) {
-    String path = sketchPath() + "/data/icons/" + iconName;
-    icon = loadImage(path);
-    h = h_;
-    xy = h.getXY();
-    drive = drive_;
-    scan = scan_;
+  //Hexagon(Hexgrid hexgrid_, int hexQ_, int hexR_, int size_) {
+  RoverCommand(Hexgrid hexgrid_, PVector hexKey_, int cardinalDir_, byte cmd, boolean function_, boolean execute_) {
+    super(hexgrid_, int(hexKey_.x), int(hexKey_.z));
     execute = execute_;
     reorient = !drive;
+    function = function_;
+    inBounds = hexgrid.checkHex(hexKey_);
     while (cardinalDir_ < 0 || cardinalDir_ >= 6) {
       if (cardinalDir_ < 0) {
         cardinalDir_ += 6;
@@ -32,22 +28,34 @@ class RoverCommand { // should this extend Hexagon class?
     cardinalDir = cardinalDir_;
     float[] cardHtoTheta = {0, 60, 120, 180, 240, 300};
     radianDir = radians(cardHtoTheta[cardinalDir]);
-    h.fillin = execute;
+    String iconName = "";
+    if (cmd == 119) { // 'w' forward
+      iconName = "forward.jpg";
+    } else if (cmd == 97) { // 'a' counterclockwise
+      iconName = "counterclockwise.jpg";
+    } else if (cmd == 115) { // 's' back
+      iconName = "uturn.jpg";
+    } else if (cmd == 100) { // 'd' right/clockwise
+      iconName = "clockwise.jpg";
+    } else if (cmd==101) { // 'e' scan for life
+      iconName = "scan.jpg";
+      scan = true;
+    }
+    String path = sketchPath() + "/data/icons/" + iconName;
+    icon= loadImage(path);
+    super.fillin = execute;
     //println("rc created");
   }
 
-  Hexagon getHex() {
-    return h;
-  }
   float getRadianDir() {
     return radianDir;
   }
   int getCardinalDir() {
     return cardinalDir;
   }
-  PVector getXY() {
-    return xy;
-  }
+  //PVector getXY() {
+  //  return xy;
+  //}
   boolean driveStatus() {
     return drive;
   }
@@ -75,7 +83,7 @@ class RoverCommand { // should this extend Hexagon class?
       reorient = false;
     }
     if (!turnToHeading && !drive && !reorient) {
-      h.fillin = false;
+      fillin = false;
       return true;
     } else {
       return false;

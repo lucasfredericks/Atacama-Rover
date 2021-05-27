@@ -45,7 +45,7 @@ class Hexgrid {
             //println(index);
             //println(mask.pixels[index]);
             PVector hexID = new PVector(q, y, r);
-            Hexagon h = new Hexagon(this, q, r, hexSize);
+            Hexagon h = new Hexagon(this, q, r);
             allHexes.put(hexID, h);
           }
         }
@@ -125,7 +125,7 @@ class Hexgrid {
     Hexagon h = allHexes.get(hexID);
     return h;
   }
-  PVector pixelToKey(PVector location){
+  PVector pixelToKey(PVector location) {
     PVector hexID = new PVector();
     hexID.x = (2./3*location.x)/hexSize;
     hexID.z = (-1./3 * location.x + sqrt(3)/3 * location.y)/hexSize;

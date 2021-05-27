@@ -1,4 +1,4 @@
-class Arena { //<>//
+class Arena { //<>// //<>//
   Point2D_F64[] corners;
   PGraphics arenaMask;
 

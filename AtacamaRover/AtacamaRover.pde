@@ -81,7 +81,7 @@ void initArena() {
           Point2D_F64 [] pxCorners = new Point2D_F64[7];
           for (int i = 0; i < 7; i++) {
             float theta = i*.9;
-            rwcorners[i] = new Point3D_F64(125*cos(theta)/lambda,125*sin(theta)/lambda, roverHeight/lambda);
+            rwcorners[i] = new Point3D_F64(125*cos(theta)/lambda, 125*sin(theta)/lambda, roverHeight/lambda);
             pxCorners[i] = new Point2D_F64(0, 0);
             SePointOps_F64.transform(worldToCamera, rwcorners[i], rwcorners[i]);
             PerspectiveOps.convertNormToPixel(intrinsic, rwcorners[i].x/rwcorners[i].z, rwcorners[i].y/rwcorners[i].z, pxCorners[i]);

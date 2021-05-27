@@ -32,10 +32,10 @@ class Governor {
     cardList.run();
     updateHUD();
   }
-  
-  int getWatchdog(){
-   int watchdog = rover.watchdog;
-   return watchdog;
+
+  int getWatchdog() {
+    int watchdog = rover.watchdog;
+    return watchdog;
   }
 
   void updateHUD() { //draw HUD

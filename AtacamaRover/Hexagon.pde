@@ -4,12 +4,9 @@ class Hexagon {
   Hexgrid hexgrid;
   float scaledX, scaledY, scaledSize;
   int hexQ, hexR;     //q for "column" = x axis, r for "row" = z axis
-  boolean inBounds;
-  boolean changed;
   PVector id;
   PVector pixelxy;
   Point2D_F64 normCoords;
-  boolean occupied = false;
   boolean fillin = false;
   int blinkAlpha = 0;
   boolean blink = false;
@@ -18,7 +15,7 @@ class Hexagon {
   float scale; //multiplier to convert from the size of the camera to the display size
   Rover occupant;
 
-  Hexagon(Hexgrid hexgrid_, int hexQ_, int hexR_, int size_) {
+  Hexagon(Hexgrid hexgrid_, int hexQ_, int hexR_) {
     hexgrid = hexgrid_;
     hexQ = hexQ_;
     hexR = hexR_;
@@ -26,7 +23,7 @@ class Hexagon {
     int hexZ = hexR;
     int hexY = -hexX - hexZ;
 
-    size = size_;
+    size = hexSize;
     pixelxy = hexToPixel(hexQ, hexR);
     pixelX = int(pixelxy.x);
     pixelY = int(pixelxy.y);
@@ -38,8 +35,6 @@ class Hexagon {
     PerspectiveOps.convertPixelToNorm(intrinsic, normCoords, normCoords);
     //.pixelToWorld(pixelxy).toVector();
     id = new PVector(hexX, hexY, hexZ);
-    inBounds = true;
-    changed = true;
   }
 
   PVector getKey() {
@@ -114,11 +109,6 @@ class Hexagon {
     }
     constrain(blinkAlpha, 0, 255);
     //println("blink: " + blinkAlpha);
-  }
-
-  void setState(boolean on) {
-    inBounds = on;
-    changed = true;
   }
 
   void occupy(Rover rover) {
