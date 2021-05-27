@@ -100,6 +100,7 @@ void draw() {
 
   if (cam.available() == true) {
     cam.read();
+    background(#3b3b3c);
     if (cvThread.dataFlag) {
 
       List<FiducialFound> found = cvThread.getFiducials();

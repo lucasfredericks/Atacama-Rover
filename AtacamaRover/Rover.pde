@@ -1,4 +1,4 @@
-class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
+class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
   Serial myPort;
   PApplet sketch;
   Hexgrid hexgrid;
@@ -10,10 +10,12 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
   PVector location;
   boolean inBounds;
   //boolean ready;
-  float turnMOE = 10;     // margin of error for turning. Given in degrees and converted to radians in constructor
+  float turnMOE = 5;     // margin of error for turning. Given in degrees and converted to radians in constructor
   String command;
   String lastCommandStr;
-  float cmdMagnitude; //if the rover is moving forward, this is given in cm. If it's turning, it is in radians
+  float cmdMagnitude; //if the rover is moving forward, this is given in mm. If it's turning, it is in radians
+  Se3_F64 roverToCamera;
+  RoverCommand currentCmd;
 
   int watchdog;
   long handshakeTimer;
@@ -24,15 +26,10 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
   Rover(Hexgrid hexgrid_, PApplet sketch_, String serial) {
     sketch = sketch_;
     hexgrid = hexgrid_;
-    //rMatrix = new DMatrixRMaj();
-    //location = new PVector();
     destination = new PVector();
     myPort = new Serial(sketch, serial, 9600);
-    //destination = new PVector(.5*width, .5*height);
     location = new PVector(0, 0);
     turnMOE = radians(turnMOE);
-    //nudgeMOE = radians(nudgeMOE);
-    //ready = true;
     handshake = true;
     watchdog = 11; //set watchdog high, so nothing will happen until the rover is located at least once
   }
@@ -40,9 +37,8 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     queue = queue_;
   }
   void resetVars() {
-    //command = "stop";
     println("reset rover vars");
-    //cmdMagnitude = 0;
+    stop_();
     handshake = true;
     handshakeTimer = millis();
   }
@@ -54,7 +50,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     while (myPort.available()>0) {
 
       int inByte = myPort.read();
-      if (inByte == 'r') { //<>//
+      if (inByte == 'r') {
         if (!handshake) {
           print("handshake");
           handshake = true;
@@ -63,52 +59,91 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
       }
     }
   }
+  float compareDistances(PVector roverDest) {
+    float distTraveled = abs(PVector.dist(moveStartLocation, location));
+    float turnDistToTravel = abs(PVector.dist(moveStartLocation, roverDest));
+    float distCompare =turnDistToTravel - distTraveled; //negative number means it has gone too far
+
+    return distCompare;
+  }
+
+  void setDestHeading() {
+
+    PVector destination = currentCmd.getXY();
+    float dy = destination.y - location.y;
+    float dx = destination.x - location.x;
+    targetHeading = (atan2(dy, dx)+.5*PI);
+    targetHeading = normalizeRadians(targetHeading);
+  }
+
+  void setFinalHeading() {
+    if (currentCmd.cmdByte == 'a' || currentCmd.cmdByte == 'd' || currentCmd.cmdByte == 's') { //only reorient 
+      targetHeading = currentCmd.getRadianDir();
+      targetHeading = normalizeRadians(targetHeading);
+    } else {
+      targetHeading = heading;
+    }
+  }
+
+  void updateLocation(FiducialFound f) {
+    roverToCamera=f.getFiducialToCamera();
+    DMatrixRMaj rMatrix = f.getFiducialToCamera().getR();
+    double[] euler;
+    euler = ConvertRotation3D_F64.matrixToEuler(rMatrix, EulerType.XYZ, (double[])null);
+    heading = (float) euler[2]; // - .5*PI;
+    heading = normalizeRadians(heading);
+    location.set((float)f.getImageLocation().x, (float)f.getImageLocation().y);
+    //rover.location = location;
+    queue.location = location;
+    PVector hexID = hexgrid.pixelToKey(location);
+    if (hexgrid.checkHex(hexID)) {
+      drive();
+    }
+  }
 
 
   void drive() {
     watchdog = 0;
     if (queue.checkNew()) { //if the user has pressed the button, stop the current command
-      //stop();
       resetVars();
     }
-    //println("handshake: " + handshake);
-    //stop();
     setCommand();
-    if (handshake && (millis()-handshakeTimer > 1000)) {
+    if (handshake && (millis()-handshakeTimer > 500)) {
       sendCommand();
-      handshake = false;
     }
   }
 
   void setCommand() {
-    //println("Set command");
-    if (queue.areAnyCommandsExecutable()) {
-      while (!queue.isExecutableCommand()) {
-        println("queue 0 not executable");
-        queue.commandComplete();
+
+    if (queue.checkQueue()) {             //if there are executable commands in the queue
+      currentCmd = queue.getCurrentCmd(); // sets currentcmd to commandlist<0> 
+      if (currentCmd.inBounds == false) { //if currentcmd is oob
+        do {                              //advance the queue until one is inbounds or there are no more commands
+          queue.commandComplete(); 
+          currentCmd = null; 
+          if (queue.checkQueue) {
+            currentCmd = queue.getCurrentCmd(); //set to
+          }
+        } while (currentCmd != null && currentCmd.inBounds == false);
       }
-      queue.nextCommand(); // sets commandlist<0> to current command
-      //println("drive");
-      boolean turnBool = false; //boolean variables for wayfinding while driving (not about status of the current rovercommand)
-      //boolean nudgeTurnBool = false;
-      boolean driveBool = false;
-      //boolean nudgeDriveBool = false;
-      destination = queue.getDestination();
+    }
+    if (currentCmd == null) {
+      command = "stop";
+    } else {
+      boolean turnBool = true; //boolean variables for wayfinding while driving
+      boolean driveBool = true;
       float pxdist = PVector.dist(location, destination);
       //set drive/turn variables
-      dist = (float) queue.getDistance();
+      dist = (float) getDistance();
 
-      if (pxdist >= hexSize) { //5 cm
-        driveBool = true;
-        turnBool = true;
+      if (pxdist >= hexSize/2) { //5 cm
         queue.checkCt = 0;
+        setDestHeading();
       } else {
         driveBool = false;
-        queue.checkCt = 1;
-        //println("within target distance");
+        queue.checkCt = 0;
+        setFinalHeading();
       }
-      targetHeading = queue.getHeading(); //
-      targetHeading = normalizeRadians(targetHeading);
       float ldelta = heading - targetHeading;
       float rdelta = targetHeading - heading;
       ldelta = abs(normalizeRadians(ldelta));
@@ -119,6 +154,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
       } else { 
         turnBool = false;
       }
+
       if (turnBool) {
         if (abs(ldelta)<abs(rdelta)) {
           command = "left";
@@ -132,11 +168,15 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
         cmdMagnitude = dist;
       } else {
         println("move complete");
-        queue.moveComplete();
+        currentCmd = null;
+        queue.commandComplete();
       }
-    } else {
-      command = "stop";
     }
+  }
+
+  double getDistance() {
+    double dist = currentCmd.getDist(roverToCamera);
+    return dist;
   }
 
   float normalizeRadians(float theta) {
@@ -150,6 +190,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     }
     return theta;
   }
+
   void sendCommand() {
     byte commandByte = ' ';     //invalid command will default to 'stop'
 
@@ -163,15 +204,15 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
       commandByte = 'w';
     }
 
-    if (commandByte == 'a' || commandByte == 'd' || commandByte == 'w' || commandByte == ' ') {
-      String cmdString = commandByte + "," + cmdMagnitude;
-      if (!cmdString.equals(lastCommandStr)) {
-        myPort.write(cmdString + '\n');
-        println("command (noByte): " + cmdString);
-        lastCommandStr = cmdString;
-      }
+    String cmdString = commandByte + "," + cmdMagnitude;
+    if (!cmdString.equals(lastCommandStr)) {
+      myPort.write(cmdString + '\n');
+      println("command (noByte): " + cmdString);
+      lastCommandStr = cmdString;
+      handshake = false;
     }
   }
+
   void sendCommand(byte commandByte) {
 
     if (commandByte == 'a' || commandByte == 'd' || commandByte == 'w' || commandByte == ' ') {
@@ -180,14 +221,16 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
         myPort.write(cmdString + '\n');
         lastCommandStr = cmdString;
         println("command (byte): " + cmdString);
+        handshake = false;
       }
     }
   }
-  void stop() {
+  void stop_() {
     //myPort.write("0,0" + '\n');
     println("stop");
     command = "stop";
     cmdMagnitude = 0;
+    sendCommand();
   }
 
   void displayHeading(PGraphics buffer) {
@@ -210,9 +253,8 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     buffer.noStroke();
     buffer.ellipse(0, 0, 10, 10);
     buffer.popMatrix();
-    if (queue.isExecutableCommand()) {
+    if (queue.checkQueue()) {
       buffer.pushMatrix();
-      PVector destination = queue.getDestination();
       buffer.translate(destination.x*camScale, destination.y*camScale);
       buffer.stroke(255, 0, 0);
       buffer.ellipse(0, 0, 10, 10);

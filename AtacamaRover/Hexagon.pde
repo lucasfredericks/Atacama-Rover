@@ -67,10 +67,10 @@ class Hexagon {
     buffer.popMatrix();
   }
 
-  void drawHexFill(PGraphics buffer) {
+  void drawHexFill(PGraphics buffer, color c) {
     buffer.pushMatrix();
     buffer.translate(scaledX, scaledY);
-    buffer.fill(255, 50);
+    buffer.fill(c);
     buffer.noStroke();
     buffer.beginShape();
     for (int i = 0; i <= 360; i +=60) {
@@ -111,14 +111,14 @@ class Hexagon {
     //println("blink: " + blinkAlpha);
   }
 
-  void occupy(Rover rover) {
-    occupied = true;
-    occupant = rover;
-  }
-  void vacate() {
-    occupied = false;
-    occupant = null;
-  }
+  //void occupy(Rover rover) {
+  //  occupied = true;
+  //  occupant = rover;
+  //}
+  //void vacate() {
+  //  occupied = false;
+  //  occupant = null;
+  //}
 
   PVector hexToPixel(int q, int r) {
     PVector temp = new PVector(0, 0);

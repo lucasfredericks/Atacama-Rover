@@ -3,6 +3,7 @@ class CommandList {
   Hexgrid hexgrid;
 
   CommandList(Hexgrid hexgrid_) {
+    super();
     commands = new ArrayList<RoverCommand>();
     hexgrid = hexgrid_;
   }
@@ -45,6 +46,24 @@ class CommandList {
     return byteList;
   }
 
+  drawHexes(PGraphics buffer) {
+    color c = (#aae4df, 100);
+    color d = (255, 0, 0, 100);
+  for (RoverCommand rc: commands) {
+      if (rc.executable) {
+        if (rc.inBounds) {
+          rc.drawHexfill(buffer, c);
+        } else {
+          rc.drawHexfill(buffer, d);
+        }
+      }
+    }
+  }
+  
+  ArrayList<RoverCommand> getRCList(){
+   return commands; 
+  }
+
   void createList(byte[] mainQueue, byte[] funcQueue, PVector hexKey, int cardinalHeading, boolean execute) {
     ArrayList<BytePlus> byteList = parseRawCmds(mainQueue, funcQueue);
     commands.clear();
@@ -83,6 +102,16 @@ class CommandList {
   }
   void clearList() {
     commands.clear();
+  }
+  void commandComplete() {
+    if (!commands.isEmpty()) {
+      commands.remove(0);
+    }
+  }
+
+  RoverCommand getCurrentCmd() {
+    RoverCommand rc = commands.get(0);
+    return rc;
   }
   void initClearCommandList() {
     for (RoverCommand rc : commands) {

@@ -17,7 +17,7 @@ class Governor {
     String roverPortName = Serial.list()[roverPort];
     String queuePortName = Serial.list()[readerPort];
     cardList = new CardList();
-    queueGUI = createGraphics(1920, 120);
+    queueGUI = createGraphics(1280, 120);
     HUDbuffer = createGraphics(1920, 1080);
     hexgridBuffer = createGraphics(1280, 960);
     rover = new Rover(hexgrid, sketch, roverPortName);
@@ -42,8 +42,10 @@ class Governor {
 
     hexgridBuffer.beginDraw();
     hexgridBuffer.clear();
+    
     queue.drawHexes(hexgridBuffer);
     rover.displayHeading(hexgridBuffer);
+    hexgridBuffer.endDraw();
 
     //display queue
     HUDbuffer.beginDraw();
@@ -72,6 +74,6 @@ class Governor {
 
 
   void updateRoverLocation(FiducialFound f) {
-    queue.updateLocation(f);
+    rover.updateLocation(f);
   }
 }

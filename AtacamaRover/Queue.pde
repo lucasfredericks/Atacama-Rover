@@ -12,12 +12,11 @@ class Queue {
   Hexgrid hexgrid;
   Hexagon scanDest;
   boolean newCommands;
-  RoverCommand currentCommand;
   float destinationHeading;
   float commandTotalDistance = 0;
   int checkCt = 0;
   PVector location;
-  Se3_F64 roverToCamera;
+
   PVector moveStartLocation;
 
   //ArrayList<Byte> byteList;
@@ -44,8 +43,7 @@ class Queue {
   void update() {
 
     if ( myPort.available() > 0) { // If data is available,
-      byte[] mainQueue = new byte[5];
-      byte[] funcQueue = new byte[5];
+
       byte[] inBuffer = new byte[12];
       byte interesting = 16; //endByte
       inBuffer = myPort.readBytesUntil(interesting);
@@ -54,6 +52,8 @@ class Queue {
       if (inBuffer == null || inBuffer.length != 12) { //throw out junk
         return;
       } 
+      byte[] mainQueue = new byte[5];
+      byte[] funcQueue = new byte[5];
       boolean execute;
       for (int i = 0; i < 5; i++) {
         mainQueue[i] = inBuffer[i];
@@ -61,8 +61,8 @@ class Queue {
       }
       //println("parsing queue into byte list");
       if (inBuffer[5] == 'n') {//if the user has pressed the button
-        if (commandList.isExecutableCommand()) {
-          execute = false;
+        if (commandList.isExecutableCommand()) { //if the rover is already moving
+          execute = false; //the first button press will cancel current execution.
         } else {
           execute = true;
         }
@@ -73,22 +73,22 @@ class Queue {
           execute = false;
         }
       }
-      if (execute) {
-        myPort.write('r'); //button red
-        newCommands = true;
-      } else {
-        myPort.write('g'); //button green
-        newCommands = false;
-      }
-      int cardinalHeading = roundHeading(rover.heading);
-      //Hexagon hexLoc = hexgrid.pixelToHex((int)lastXY.x, (int)lastXY.y);
-      PVector hexKey =hexgrid.pixelToKey(rover.location);
+      newCommands = execute;
+      int cardinalHeading = roundHeading(rover.heading); //calculate the command list from the rover's starting position and heading
+      PVector hexKey = hexgrid.pixelToKey(rover.location);
       commandList.createList(mainQueue, funcQueue, hexKey, cardinalHeading, execute);
     }
-    nextCommand();
+
+    setButtonColor();
     updateGUI();
-    //println(commandList);
-    //println("command list length: " + commandList.size());
+  }
+
+  void setButtonColor() {
+    if (commandList.isExecutableCommand()) {
+      myPort.write('r'); //button red
+    } else {
+      myPort.write('g'); //button green
+    }
   }
 
   void pickScanDest() {
@@ -122,178 +122,96 @@ class Queue {
     GUI.beginDraw();
     GUI.background(0, 255, 255);
     GUI.pushMatrix();
-    GUI.translate(50, GUI.height*.5);
+    GUI.translate(0, GUI.height*.5);
     GUI.imageMode(CENTER);
-    for (RoverCommand rc : commandList) {
+    GUI.fill(#0098be);
+    GUI.noStroke();
+    GUI.rectMode(CENTER);
+    ArrayList<RoverCommand> commands = commandList.getRCList();
+    for (RoverCommand rc : commands) {
+      GUI.translate(115,0);
+      GUI.pushMatrix();
       PImage icon = rc.getIcon();
-      GUI.image(icon, 0, 0, 50, 50);
-      GUI.translate(75, 0);
+      if (rc.function) {
+        rect(0, 0, 100, 100, 10);
+      }
+      GUI.rotate(rc.radianDir);
+      GUI.image(icon, 0, 0, 80, 80);
+      GUI.popMatrix();
     }
-    GUI.popMatrix();
+      GUI.popMatrix();
     GUI.endDraw();
   }
 
   void drawHexes(PGraphics buffer) {
     buffer.beginDraw();
-    for (RoverCommand rc : commandList) {
-      if (rc.execute) {
-        Hexagon h = rc.getHex();
-        h.drawHexFill(buffer);
-      }
-    }
-    scanDest.blinkHex(buffer);
-    buffer.endDraw();
+    commandList.drawHexes(buffer);
   }
+  scanDest.blinkHex(buffer);
+  buffer.endDraw();
+}
 
-  float cardDirToRadians(int cardD) {
-    float[] cardHtoTheta = {0, 60, 120, 180, 240, 300};
-    while (cardD < 0 || cardD >= 6) {
-      if (cardD < 0) {
-        cardD += 6;
-      }
-      if (cardD >= 6) {
-        cardD -= 6;
-      }
+float cardDirToRadians(int cardD) {
+  float[] cardHtoTheta = {0, 60, 120, 180, 240, 300};
+  while (cardD < 0 || cardD >= 6) {
+    if (cardD < 0) {
+      cardD += 6;
     }
-    return cardHtoTheta[cardD];
-  }
-
-  boolean checkNext() {
-    if (commandList.isEmpty()) {
-      myPort.write('g');
-      println("empty");
-      return false;
-    } else {
-      return true;
+    if (cardD >= 6) {
+      cardD -= 6;
     }
   }
+  return cardHtoTheta[cardD];
+}
 
-  boolean checkNew() {
-    if (newCommands) {
-      newCommands = false;
-      nextCommand();
-      return true;
-    } else {
-      return false;
-    }
+RoverCommand getCurrentCmd() {
+  return commandList.getCurrentCmd();
+}
+
+boolean checkQueue() {
+  if (commandList.isEmpty() || commandList.isExecutableCommand() == false) {
+    return false;
+  } else {
+    return true;
   }
+}
 
-  float getHeading() {
-    if (currentCommand.driveStatus()) {
-      if (checkCt < 1) { //only calculate the heading 4x bc the angles get extreme when close to the destination
-        //if (true) {
-        PVector destination = currentCommand.getXY();
-        float dy = destination.y - location.y;
-        float dx = destination.x - location.x;
-        moveStartLocation.set(location);
-        destinationHeading = (atan2(dy, dx)+.5*PI);
-        while (destinationHeading < 0 || destinationHeading > TWO_PI) {
-          if (destinationHeading < 0) {
-            destinationHeading += TWO_PI;
-          }
-          if (destinationHeading > TWO_PI) {
-            destinationHeading -= TWO_PI;
-          }
-        }
-        checkCt++;
-      }
-    } else if (currentCommand.reorientStatus()) { //if drive portion is complete, check for reorientation turns
-      destinationHeading = currentCommand.getRadianDir();
-      checkCt = 0;
-      moveStartLocation.set(location); //set the destination to the rover's current position
-    } else {
-      destinationHeading = rover.heading;
-    }
-    return destinationHeading;
+boolean checkInBounds() {
+  commandList.isEmpty() || commandList.isInBounds() == false) {
+    return false;
+  } else {
+    return true;
   }
+}
 
-  float compareDistances(PVector roverDest) {
-    float distTraveled = abs(PVector.dist(moveStartLocation, location));
-    float turnDistToTravel = abs(PVector.dist(moveStartLocation, roverDest));
-    float distCompare =turnDistToTravel - distTraveled; //negative number means it has gone too far
-
-    return distCompare;
+boolean checkNew() {
+  if (newCommands) {
+    newCommands = false;
+    return true;
+  } else {
+    return false;
   }
+}
 
 
-
-  void updateLocation(FiducialFound f) {
-    roverToCamera=f.getFiducialToCamera();
-    DMatrixRMaj rMatrix = f.getFiducialToCamera().getR();
-    double[] euler;
-    euler = ConvertRotation3D_F64.matrixToEuler(rMatrix, EulerType.XYZ, (double[])null);
-    float heading = (float) euler[2]; // - .5*PI;
-    while (heading < 0 || heading > TWO_PI) {
-      if (heading < 0) {
-        heading+= TWO_PI;
-      }
-      if (heading > TWO_PI) {
-        heading -= TWO_PI;
-      }
-    }
-    rover.heading = heading;
-    location.set((float)f.getImageLocation().x, (float)f.getImageLocation().y);
-    rover.location = location;
-    PVector hexID = hexgrid.pixelToKey(location);
-    if (hexgrid.checkHex(hexID)) {
-      rover.drive();
-    }
-  }
-  PVector getDestination() {
-    if (currentCommand.driveStatus()) {
-      PVector destination = currentCommand.getXY();
-      return destination;
-    } else {
-      return location;
-    }
-  }
-  double getDistance() {
-    //Vector3D_F64 translation = roverToCamera.getT();
-    double dist = currentCommand.h.getDist(roverToCamera);
-    return dist;
-  }
-
-  boolean driveStatus() {
-    return currentCommand.driveStatus();
-  }
-  boolean reorientStatus() {
-    return currentCommand.reorientStatus();
-  }
-  void moveComplete() {
-    if (currentCommand.scan) {
-
-      if (cardList.scan(currentCommand.getHex(), scanDest)) {
-        pickScanDest();
-      }
-      commandComplete();
-    } else if (currentCommand.moveComplete()) {
-      commandComplete();
-    }
-  }
-
-
-  void commandComplete() {
-    checkCt = 0;
-    println("command complete");
-    if (!commandList.isEmpty()) {
-      commandList.remove(0);
-      println("removing last command");
-    }
-    nextCommand();
-  }
-  void nextCommand() {
-    if (!commandList.isEmpty()) {
-      currentCommand = commandList.get(0);
-      //println("setting next command");
-      if (isExecutableCommand()) {
-        myPort.write('r');
-        //println("button red");
-      }
-    } else {
-      myPort.write('g');
-      //println("button green");
-      currentCommand = null;
-      //println("cc null");
-    }
-  }
+void commandComplete() {
+  checkCt = 0;
+  println("command complete");
+  commandList.commandComplete(); //deletes current cmd
+}
+//void nextCommand() {
+//  if (!commandList.isEmpty()) {
+//    currentCommand = commandList.get(0);
+//    //println("setting next command");
+//    if (isExecutableCommand()) {
+//      myPort.write('r');
+//      //println("button red");
+//    }
+//  } else {
+//    myPort.write('g');
+//    //println("button green");
+//    currentCommand = null;
+//    //println("cc null");
+//  }
+//}
 }

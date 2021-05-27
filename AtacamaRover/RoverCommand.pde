@@ -9,10 +9,12 @@ class RoverCommand extends Hexagon { // should this extend Hexagon class?
   //PVector xy;
   PImage icon;
   int headingCheckCt = 0;
+  byte cmdByte;
 
   //Hexagon(Hexgrid hexgrid_, int hexQ_, int hexR_, int size_) {
-  RoverCommand(Hexgrid hexgrid_, PVector hexKey_, int cardinalDir_, byte cmd, boolean function_, boolean execute_) {
+  RoverCommand(Hexgrid hexgrid_, PVector hexKey_, int cardinalDir_, byte cmd_, boolean function_, boolean execute_) {
     super(hexgrid_, int(hexKey_.x), int(hexKey_.z));
+    cmdByte = cmd_;
     execute = execute_;
     reorient = !drive;
     function = function_;
