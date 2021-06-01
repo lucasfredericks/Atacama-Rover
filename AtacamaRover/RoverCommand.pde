@@ -10,6 +10,7 @@ class RoverCommand extends Hexagon { // should this extend Hexagon class?
   PImage icon;
   int headingCheckCt = 0;
   byte cmdByte;
+  
 
   //Hexagon(Hexgrid hexgrid_, int hexQ_, int hexR_, int size_) {
   RoverCommand(Hexgrid hexgrid_, PVector hexKey_, int cardinalDir_, byte cmd_, boolean function_, boolean execute_) {
@@ -73,6 +74,8 @@ class RoverCommand extends Hexagon { // should this extend Hexagon class?
   PImage getIcon() {
     return icon;
   }
+  
+  
 
   boolean moveComplete() {
     if (turnToHeading) {

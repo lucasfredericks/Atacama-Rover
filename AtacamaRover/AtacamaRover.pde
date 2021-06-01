@@ -20,8 +20,9 @@ int rover1ID = 6; // the fiducial binary identifier for rover 1
 int hexSize = 65;
 int camWidth = 1600;
 int camHeight = 1200;  
-int camBufferWidth = 1280;
-int camBufferHeight = 960;
+int camBufferWidth = 1080;
+int camBufferHeight = 810;
+int margin = 20;
 float camScale;
 color bg = color(0, 0, 0, 0);
 color hover = color(255);

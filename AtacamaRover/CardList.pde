@@ -6,20 +6,28 @@ class CardList {
   PImage[] notFound;
   PImage instructions;
   PImage currentCard;
+  int cardWidth, cardHeight;
+  PGraphics cardBuffer;
+
+  LoadingBar loadingBar;
 
 
   int lastLife;
   int lastEvidence;
   int lastNoLife;
 
-  int timer;
-  long timeout = 120000;
+  long scanTimer = 0;
+  long dispTimer;
+  long dispTimeout = 120000;
 
-  CardList() {
+  CardList(int cardWidth_, int cardHeight_) {
+    cardWidth = cardWidth_;
+    cardHeight = cardHeight_;
+    cardBuffer = createGraphics(cardWidth, cardHeight);
     lastLife = 0;
     lastEvidence = 0;
     lastNoLife = 0;
-    timer = millis();
+    dispTimer = millis();
     String path = sketchPath() + "/data/cardImages/found_evidence/";
     String[] evidenceFileNames = listFileNames(path);
     foundEvidence = new PImage[evidenceFileNames.length];
@@ -42,19 +50,38 @@ class CardList {
     path = sketchPath() + "/data/cardimages/instructions.png";
     instructions = loadImage(path);
     currentCard = instructions;
+
+    loadingBar = new LoadingBar(400, 40);
   }
 
   void run() {
-    if (millis() - timer > timeout && currentCard != instructions) {
+    if (millis() - dispTimer > dispTimeout && currentCard != instructions) {
       currentCard = instructions;
     }
   }
 
   PImage display() {
-    return currentCard;
+    cardBuffer.beginDraw();
+    cardBuffer.rectMode(CENTER); 
+    cardBuffer.clear();
+    cardBuffer.noStroke();
+    cardBuffer.fill(#000000);
+    cardBuffer.pushMatrix();
+    cardBuffer.translate(cardBuffer.width/2, cardBuffer.height/2);
+    cardBuffer.rect(0, 0, cardBuffer.width, cardBuffer.height, 10);
+    cardBuffer.popMatrix();
+    if (millis() - scanTimer < 800) { //.8 second timer
+      loadingBar.display(cardBuffer);
+    } else {
+      cardBuffer.imageMode(CENTER);
+      cardBuffer.image(currentCard, cardBuffer.width/2, cardBuffer.height/2, cardBuffer.width - 10, cardBuffer.height - 10);
+    }
+    cardBuffer.endDraw();
+    return cardBuffer;
   }
 
   boolean scan(Hexagon location, Hexagon target) {
+    scanTimer = millis();
     float d = location.getXY().dist(target.getXY());
     println(d);
     println(location);
@@ -83,7 +110,7 @@ class CardList {
   }
 
   void lifeFound() {
-    timer = millis();
+    dispTimer = millis();
     int i = lastLife;
     while (i == lastLife) {
       i = int(random(0, foundLife.length));
@@ -92,7 +119,7 @@ class CardList {
   }
 
   void evidenceFound() {
-    timer = millis();
+    dispTimer = millis();
     int i = lastEvidence;
     while (i == lastEvidence) {
       i = int(random(0, foundEvidence.length));
@@ -101,7 +128,7 @@ class CardList {
   }
 
   void noLifeFound() {
-    timer = millis();
+    dispTimer = millis();
     int i = lastNoLife;
     while (i == lastNoLife) {
       i = int(random(0, notFound.length));
@@ -123,5 +150,39 @@ class CardList {
       // If it's not a directory
       return null;
     }
+  }
+}
+
+class LoadingBar() {
+  int iter;
+  int xLoc, yLoc, barWidth, barHeight, rectWidth, margin;
+
+  LoadingBar(int barWidth_, int barHeight_) { 
+    barWidth = barWidth_;
+    barHeight = barHeight_;
+    iter = 0;
+    rectWidth = barWidth/15;
+    margin = barWidth % 15;
+  }
+  PGraphics display(int xLoc, int yLoc, PGraphics buffer) {
+    buffer.noFill();
+    color c = #00ffff;
+    buffer.pushMatrix();
+    buffer.translate(xLoc, yLoc);
+    buffer.stroke(255, 100);
+    buffer.strokeWeight(2);
+    buffer.rect(0, 0, barWidth, barHeight + margin, 10);  
+    buffer.translate(-barWidth/2, 0);
+    buffer.noStroke();
+    for (int i = (rectWidth + margin)/2; i < barWidth; i+= rectWidth) {
+      int alpha = min(abs(i - iter), abs(i - barWidth + iter));
+      //int alpha = min(abs(i - iter), abs(i - barWidth - iter), i + barWidth - iter);
+      map(alpha, 0, barWidth, 0, 255);
+      fill(c, alpha);
+      buffer.rect(i, 0, rectWidth - 5, barHeight, 5);
+    }
+    buffer.popMatrix();
+    iter = (iter + 2) % barWidth;
+    return buffer;
   }
 }

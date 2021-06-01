@@ -47,8 +47,10 @@ class CommandList {
   }
 
   drawHexes(PGraphics buffer) {
-    color c = (#aae4df, 100);
-    color d = (255, 0, 0, 100);
+    color c;
+    color d;
+    c = (#aae4df, 100); 
+    d = (255, 0, 0, 100);
   for (RoverCommand rc: commands) {
       if (rc.executable) {
         if (rc.inBounds) {
