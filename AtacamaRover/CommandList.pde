@@ -3,7 +3,7 @@ class CommandList {
   Hexgrid hexgrid;
 
   CommandList(Hexgrid hexgrid_) {
-    super();
+    println("command list init start");
     commands = new ArrayList<RoverCommand>();
     hexgrid = hexgrid_;
   }
@@ -46,24 +46,22 @@ class CommandList {
     return byteList;
   }
 
-  drawHexes(PGraphics buffer) {
-    color c;
-    color d;
-    c = (#aae4df, 100); 
-    d = (255, 0, 0, 100);
-  for (RoverCommand rc: commands) {
-      if (rc.executable) {
+  void drawHexes(PGraphics buffer) {
+    color c_ = #aae4df; 
+    color d_ = #ff0000;
+    for (RoverCommand rc : commands) {
+      if (rc.execute) {
         if (rc.inBounds) {
-          rc.drawHexfill(buffer, c);
+          rc.drawHexFill(buffer, c_, 120);
         } else {
-          rc.drawHexfill(buffer, d);
+          rc.drawHexFill(buffer, d_, 120);
         }
       }
     }
   }
-  
-  ArrayList<RoverCommand> getRCList(){
-   return commands; 
+
+  ArrayList<RoverCommand> getRCList() {
+    return commands;
   }
 
   void createList(byte[] mainQueue, byte[] funcQueue, PVector hexKey, int cardinalHeading, boolean execute) {
@@ -102,9 +100,11 @@ class CommandList {
       commands.add(rc);
     }
   }
+
   void clearList() {
     commands.clear();
   }
+
   void commandComplete() {
     if (!commands.isEmpty()) {
       commands.remove(0);
@@ -115,16 +115,13 @@ class CommandList {
     RoverCommand rc = commands.get(0);
     return rc;
   }
+
   void initClearCommandList() {
     for (RoverCommand rc : commands) {
       rc.fillin = false;
     }
   }
-  //for (byte cmd : byteList) {
-  //  
 
-  //  //}
-  //}
   boolean isActiveCommand() {
     return(!commands.isEmpty());
     //check whether there is a command underway
@@ -142,15 +139,15 @@ class CommandList {
     return false;
   }
 
-  //boolean areAnyCommandsExecutable() {
+  boolean isInBounds() {
+    RoverCommand rc = commands.get(0);
+    if (rc.inBounds) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 
-  //  for (RoverCommand rc : commands) {
-  //    if (rc.execute) {
-  //      return true;
-  //    }
-  //  }
-  //  return false;
-  //}
   boolean isValid(byte tempByte, boolean function) {
 
     if (tempByte == 119) {    // 'w' forward
@@ -179,12 +176,12 @@ class CommandList {
       return false;
     }
   }
-  class BytePlus { 
-    byte cmd;
-    boolean function;
-    BytePlus(byte cmd_, boolean function_) {
-      cmd = cmd_;
-      function = function_;
-    }
+}
+class BytePlus { 
+  byte cmd;
+  boolean function;
+  BytePlus(byte cmd_, boolean function_) {
+    cmd = cmd_;
+    function = function_;
   }
 }  

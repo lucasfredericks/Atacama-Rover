@@ -1,4 +1,4 @@
-class Governor {
+class Governor { //<>//
   PApplet sketch;
   PGraphics HUDbuffer;
   PGraphics hexgridBuffer;
@@ -16,12 +16,13 @@ class Governor {
     hexgrid = hexgrid_;
     String roverPortName = Serial.list()[roverPort];
     String queuePortName = Serial.list()[readerPort];
-    cardList = new CardList();
+    cardList = new CardList(780, 780);
     queueGUI = createGraphics(1080, 210);
     HUDbuffer = createGraphics(1920, 1080);
     hexgridBuffer = createGraphics(camBufferWidth, camBufferHeight);
+    CommandList commandList = new CommandList(hexgrid);
     rover = new Rover(hexgrid, sketch, roverPortName);
-    queue = new Queue(sketch, cardList, hexgrid, queuePortName, queueGUI);
+    queue = new Queue(sketch, cardList, hexgrid, queuePortName, queueGUI, commandList);
     rover.initQueue(queue);
     queue.initRover(rover);
     hexgrid.drawOutlines(hexgridBuffer);

@@ -59,13 +59,13 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
       }
     }
   }
-  float compareDistances(PVector roverDest) {
-    float distTraveled = abs(PVector.dist(moveStartLocation, location));
-    float turnDistToTravel = abs(PVector.dist(moveStartLocation, roverDest));
-    float distCompare =turnDistToTravel - distTraveled; //negative number means it has gone too far
+  //float compareDistances(PVector roverDest) {
+  //  float distTraveled = abs(PVector.dist(moveStartLocation, location));
+  //  float turnDistToTravel = abs(PVector.dist(moveStartLocation, roverDest));
+  //  float distCompare =turnDistToTravel - distTraveled; //negative number means it has gone too far
 
-    return distCompare;
-  }
+  //  return distCompare;
+  //}
 
   void setDestHeading() {
 
@@ -121,7 +121,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
         do {                              //advance the queue until one is inbounds or there are no more commands
           queue.commandComplete(); 
           currentCmd = null; 
-          if (queue.checkQueue) {
+          if (queue.checkQueue()) {
             currentCmd = queue.getCurrentCmd(); //set to
           }
         } while (currentCmd != null && currentCmd.inBounds == false);
@@ -244,10 +244,10 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     buffer.pushMatrix();
     buffer.rotate(heading);
     buffer.beginShape();
-    buffer.vertex(0,0);
-    buffer.vertex(20,10);
-    buffer.vertex(0,-50);
-    buffer.vertex(-20,10);
+    buffer.vertex(0, 20);
+    buffer.vertex(20, 30);
+    buffer.vertex(0, -30);
+    buffer.vertex(-20, 30);
     buffer.endShape(CLOSE);
     //buffer.stroke(255, 0, 0);
     //buffer.line(0, 0, 0, - 50);
@@ -270,4 +270,3 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     buffer.endDraw();
   }
 }
-//line(pixelLocation.x, pixelLocation.y, dy, dx);

@@ -82,6 +82,23 @@ class Hexagon {
     buffer.endShape();
     buffer.popMatrix();
   }
+
+  void drawHexFill(PGraphics buffer, color c, int alpha) {
+    buffer.pushMatrix();
+    buffer.translate(scaledX, scaledY);
+    buffer.fill(c, alpha);
+    buffer.noStroke();
+    buffer.beginShape();
+    for (int i = 0; i <= 360; i +=60) {
+      float theta = radians(i);
+      float cornerX = camScale * size * cos(theta);
+      float cornerY = camScale * size * sin(theta);
+      buffer.vertex(cornerX, cornerY);
+    }
+    buffer.endShape();
+    buffer.popMatrix();
+  }
+  
   void blinkHex(PGraphics buffer) {
     buffer.pushMatrix();
     buffer.translate(scaledX, scaledY);

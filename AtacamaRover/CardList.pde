@@ -71,7 +71,7 @@ class CardList {
     cardBuffer.rect(0, 0, cardBuffer.width, cardBuffer.height, 10);
     cardBuffer.popMatrix();
     if (millis() - scanTimer < 800) { //.8 second timer
-      loadingBar.display(cardBuffer);
+      loadingBar.display(cardBuffer.width/2, cardBuffer.height/2, cardBuffer);
     } else {
       cardBuffer.imageMode(CENTER);
       cardBuffer.image(currentCard, cardBuffer.width/2, cardBuffer.height/2, cardBuffer.width - 10, cardBuffer.height - 10);
@@ -153,7 +153,7 @@ class CardList {
   }
 }
 
-class LoadingBar() {
+class LoadingBar {
   int iter;
   int xLoc, yLoc, barWidth, barHeight, rectWidth, margin;
 

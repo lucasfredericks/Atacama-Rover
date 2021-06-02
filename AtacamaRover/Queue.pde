@@ -22,7 +22,10 @@ class Queue {
   //ArrayList<Byte> byteList;
   CommandList commandList;
 
-  Queue(PApplet sketch_, CardList cardList_, Hexgrid hexgrid_, String serial, PGraphics GUI_) {
+  //queue = new Queue(sketch, cardList, hexgrid, queuePortName, queueGUI);
+
+  Queue(PApplet sketch_, CardList cardList_, Hexgrid hexgrid_, String serial, PGraphics GUI_, CommandList commandList_) {
+    println("queue init start");
     cardList = cardList_;
     hexgrid = hexgrid_;
     //    byteList = new ArrayList<Byte>();
@@ -30,10 +33,14 @@ class Queue {
     sketch = sketch_;
     GUI = GUI_;
     myPort = new Serial(sketch, serial, 115200);
+    println("queue Serial init");
     moveStartLocation = new PVector();
-    pickScanDest();
+    Object[] keys = hexgrid.allHexes.keySet().toArray();
+    Object randHexKey = keys[new Random().nextInt(keys.length)];
+    scanDest = hexgrid.getHex((PVector)randHexKey);
     location = new PVector(camWidth/2, camHeight/2);
-    commandList = new CommandList(hexgrid);
+    commandList = commandList_;    
+    println("queue init complete");
   }
 
   void initRover(Rover rover_) {
@@ -92,6 +99,7 @@ class Queue {
   }
 
   void pickScanDest() {
+    println("pick scan dest start");
     Hexagon h;
     Object[] keys = hexgrid.allHexes.keySet().toArray();
     do {
@@ -99,6 +107,7 @@ class Queue {
       h = hexgrid.getHex((PVector)randHexKey);
     } while (h!= scanDest);
     scanDest = h;
+    println("pick scan dest complete");
   }
   int roundHeading(float heading_) {
     int cHeading = 0;
@@ -120,7 +129,8 @@ class Queue {
 
   void updateGUI() {
     GUI.beginDraw();
-    GUI.background(0, 255, 255);
+    //GUI.background(0, 255, 255);
+    GUI.clear();
     GUI.pushMatrix();
     GUI.translate(0, GUI.height*.5);
     GUI.imageMode(CENTER);
@@ -129,89 +139,88 @@ class Queue {
     GUI.rectMode(CENTER);
     ArrayList<RoverCommand> commands = commandList.getRCList();
     for (RoverCommand rc : commands) {
-      GUI.translate(115,0);
+      GUI.translate(115, 0);
       GUI.pushMatrix();
       PImage icon = rc.getIcon();
       if (rc.function) {
-        rect(0, 0, 100, 100, 10);
+        GUI.rect(0, 0, 100, 100, 10);
       }
       GUI.rotate(rc.radianDir);
       GUI.image(icon, 0, 0, 80, 80);
       GUI.popMatrix();
     }
-      GUI.popMatrix();
+    GUI.popMatrix();
     GUI.endDraw();
   }
 
   void drawHexes(PGraphics buffer) {
     buffer.beginDraw();
     commandList.drawHexes(buffer);
+    scanDest.blinkHex(buffer);
+    buffer.endDraw();
   }
-  scanDest.blinkHex(buffer);
-  buffer.endDraw();
-}
 
-float cardDirToRadians(int cardD) {
-  float[] cardHtoTheta = {0, 60, 120, 180, 240, 300};
-  while (cardD < 0 || cardD >= 6) {
-    if (cardD < 0) {
-      cardD += 6;
+  float cardDirToRadians(int cardD) {
+    float[] cardHtoTheta = {0, 60, 120, 180, 240, 300};
+    while (cardD < 0 || cardD >= 6) {
+      if (cardD < 0) {
+        cardD += 6;
+      }
+      if (cardD >= 6) {
+        cardD -= 6;
+      }
     }
-    if (cardD >= 6) {
-      cardD -= 6;
+    return cardHtoTheta[cardD];
+  }
+
+  RoverCommand getCurrentCmd() {
+    return commandList.getCurrentCmd();
+  }
+
+  boolean checkQueue() {
+    if (commandList.isEmpty() || commandList.isExecutableCommand() == false) {
+      return false;
+    } else {
+      return true;
     }
   }
-  return cardHtoTheta[cardD];
-}
 
-RoverCommand getCurrentCmd() {
-  return commandList.getCurrentCmd();
-}
-
-boolean checkQueue() {
-  if (commandList.isEmpty() || commandList.isExecutableCommand() == false) {
-    return false;
-  } else {
-    return true;
+  boolean checkInBounds() {
+    if (commandList.isEmpty() || commandList.isInBounds() == false) {
+      return false;
+    } else {
+      return true;
+    }
   }
-}
 
-boolean checkInBounds() {
-  commandList.isEmpty() || commandList.isInBounds() == false) {
-    return false;
-  } else {
-    return true;
+  boolean checkNew() {
+    if (newCommands) {
+      newCommands = false;
+      return true;
+    } else {
+      return false;
+    }
   }
-}
 
-boolean checkNew() {
-  if (newCommands) {
-    newCommands = false;
-    return true;
-  } else {
-    return false;
+
+  void commandComplete() {
+    checkCt = 0;
+    println("command complete");
+    commandList.commandComplete(); //deletes current cmd
   }
-}
-
-
-void commandComplete() {
-  checkCt = 0;
-  println("command complete");
-  commandList.commandComplete(); //deletes current cmd
-}
-//void nextCommand() {
-//  if (!commandList.isEmpty()) {
-//    currentCommand = commandList.get(0);
-//    //println("setting next command");
-//    if (isExecutableCommand()) {
-//      myPort.write('r');
-//      //println("button red");
-//    }
-//  } else {
-//    myPort.write('g');
-//    //println("button green");
-//    currentCommand = null;
-//    //println("cc null");
-//  }
-//}
+  //void nextCommand() {
+  //  if (!commandList.isEmpty()) {
+  //    currentCommand = commandList.get(0);
+  //    //println("setting next command");
+  //    if (isExecutableCommand()) {
+  //      myPort.write('r');
+  //      //println("button red");
+  //    }
+  //  } else {
+  //    myPort.write('g');
+  //    //println("button green");
+  //    currentCommand = null;
+  //    //println("cc null");
+  //  }
+  //}
 }

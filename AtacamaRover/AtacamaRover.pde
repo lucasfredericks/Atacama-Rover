@@ -1,4 +1,4 @@
-import boofcv.processing.*; //<>//
+import boofcv.processing.*;
 import processing.video.*;
 import java.util.*;
 import org.ejml.*;
@@ -57,9 +57,12 @@ void setup() {
 
   int readerPort1 = 1;
   int roverPort1 = 0;
+
   governor1 = new Governor(this, hexgrid, roverPort1, readerPort1);
+  //println("governor instantiated");
   gridOutlines = createGraphics(camBufferWidth, camBufferHeight);
   hexgrid.drawOutlines(gridOutlines);
+  println("setup complete");
 }
 
 void initArena() {
@@ -99,8 +102,8 @@ void initArena() {
 
 void draw() {
 
-  if (cam.available() == true) {
-    cam.read();
+  if (cam.available() == true) { //<>//
+    cam.read(); //<>//
     background(#3b3b3c);
     if (cvThread.dataFlag) {
 
@@ -124,9 +127,9 @@ void draw() {
     governor1.run();
   }
   ////canvas.beginDraw();
-  image(cam, 0, 0, camBufferWidth, camBufferHeight);
+  image(cam, margin, margin, camBufferWidth, camBufferHeight); //<>//
   //image(arenaMask, 0, 0, camBufferWidth, camBufferHeight);
-  image(gridOutlines, 0, 0);
+  image(gridOutlines, margin, margin);
   image(governor1.displayHUD(), 0, 0);
   pushMatrix();
   String stats = ("framerate: " + int(frameRate) + ",  CV latency: " + cvThread.latencyRatio + ", watchdog: " + governor1.getWatchdog());

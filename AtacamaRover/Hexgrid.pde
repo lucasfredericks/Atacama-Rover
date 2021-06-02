@@ -83,14 +83,6 @@ class Hexgrid {
   }
   //void updateRoverLocation(int roverID, FiducialFound f) {
   //}
-
-  void occupyHex(Rover rover, Hexagon newHex, Hexagon lastHex) {
-
-    newHex.occupy(rover);
-    if (lastHex != null) {
-      lastHex.vacate();
-    }
-  }
   //PVector getHexKeyfromHex(Hexagon h){
 
   //}
@@ -163,6 +155,7 @@ class Hexgrid {
   boolean checkHex(PVector hexKey_) {
     return (allHexes.containsKey(hexKey_));
   }
+
   Hexagon getNeighbor(Hexagon h, int neighbor) {
     PVector hexID = h.getKey();
     PVector neighborID = hexID.copy();
@@ -229,6 +222,7 @@ class Hexgrid {
     SePointOps_F64.transformReverse(worldToCamera, rwLoc, rwLoc);
     return rwLoc;
   }
+
   Point3D_F64 pixelToWorld(PVector px_) {
     Point3D_F64 rwLoc = new Point3D_F64();
     Point2D_F64 px = new Point2D_F64(px_.x, px_.y);
@@ -238,6 +232,7 @@ class Hexgrid {
     SePointOps_F64.transformReverse(worldToCamera, rwLoc, rwLoc);
     return rwLoc;
   }
+
   Point3D_F64 norm2DTo3D(Point2D_F64 xy, double z) {
     Point3D_F64 result = new Point3D_F64(xy.x, xy.y, 1);
     result.scale(z);
