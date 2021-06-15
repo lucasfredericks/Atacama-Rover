@@ -15,6 +15,7 @@ class CardList {
   int cardWidth, cardHeight;
   PGraphics cardBuffer;
   Animation lines;
+  boolean animate = false;
 
   LoadingBar loadingBar;
 
@@ -35,7 +36,7 @@ class CardList {
     lastEvidence = 0;
     lastNoLife = 0;
     dispTimer = millis();
-    lines = new Animation("Line_animation/Line_animation_", 16);
+    lines = new Animation("cardImages/Line_animation/Line_animation_", 16);
     String path = sketchPath() + "/data/cardImages/found_evidence/";
     String[] evidenceFileNames = listFileNames(path);
     foundEvidence = new PImage[evidenceFileNames.length];
@@ -55,7 +56,7 @@ class CardList {
     for (int i = 0; i < noLifeFileNames.length; i++) {
       notFound[i] = loadImage(path+noLifeFileNames[i]);
     }
-    path = sketchPath() + "/data/cardimages/instructions.png";
+    path = sketchPath() + "/data/cardimages/Intro.png";
     instructions = loadImage(path);
     currentCard = instructions;
     path = sketchPath() + "/data/results_indicator/";
@@ -72,6 +73,7 @@ class CardList {
     if (millis() - dispTimer > dispTimeout && currentCard != instructions) {
       currentCard = instructions;
     }
+    
   }
 
   PImage displayCard() {
@@ -79,18 +81,23 @@ class CardList {
     cardBuffer.rectMode(CENTER); 
     cardBuffer.clear();
     cardBuffer.noStroke();
-    cardBuffer.fill(#000000);
+    //cardBuffer.fill(#000000);
     cardBuffer.pushMatrix();
     cardBuffer.translate(cardWidth/2, cardHeight/2);
-    cardBuffer.rect(0, 0, cardWidth, cardHeight, 10);
+    //cardBuffer.rect(0, 0, cardWidth, cardHeight, 10);
 
-    if (millis() - scanTimer < 800) { //.8 second timer
+    if (millis() - scanTimer < 1000) { //.8 second timer
       loadingBar.display(0, 0, cardBuffer);
     } else {
       cardBuffer.imageMode(CENTER);
-      cardBuffer.image(currentCard, 0, 0);
-      if (currentCard != instructions) {
-        cardBuffer.image(lines.display(), 0, 0);
+      cardBuffer.image(currentCard, 0, 0, cardWidth, cardHeight);
+      if (animate) {
+        cardBuffer.imageMode(CORNER);
+        cardBuffer.popMatrix();
+        cardBuffer.pushMatrix();
+        cardBuffer.translate(445,112);
+        cardBuffer.image(lines.display(), 0, 0, 300,531);
+
       }
     }
     cardBuffer.popMatrix();
@@ -131,36 +138,43 @@ class CardList {
   }
 
   void lifeFound() {
+    animate = true;
     dispTimer = millis();
     int i = lastLife;
     while (i == lastLife) {
       i = int(random(0, foundLife.length));
     }
+    lastLife = i;
     currentCard = foundLife[i];
     currentIndicator = indicatorLife;
   }
 
   void evidenceFound() {
+    animate = false;
     dispTimer = millis();
     int i = lastEvidence;
     while (i == lastEvidence) {
       i = int(random(0, foundEvidence.length));
     }
+    lastEvidence = i;
     currentCard = foundEvidence[i];
     currentIndicator = indicatorSignOfLife;
   }
 
   void noLifeFound() {
+    animate = false;
     dispTimer = millis();
     int i = lastNoLife;
     while (i == lastNoLife) {
       i = int(random(0, notFound.length));
     }
+    lastNoLife = i;
     currentCard = notFound[i];
     currentIndicator = indicatorNoLife;
   }
 
   PImage showInstructions() {
+    animate = false;
     currentCard = instructions;
     currentIndicator = indicatorOff;
     return instructions;
@@ -204,11 +218,11 @@ class LoadingBar {
       int alpha = min(abs(i - iter), abs(i - barWidth + iter));
       //int alpha = min(abs(i - iter), abs(i - barWidth - iter), i + barWidth - iter);
       map(alpha, 0, barWidth, 0, 255);
-      fill(c, alpha);
+      buffer.fill(c, alpha);
       buffer.rect(i, 0, rectWidth - 5, barHeight, 5);
     }
     buffer.popMatrix();
-    iter = (iter + 2) % barWidth;
+    iter = (iter + 4) % barWidth;
     return buffer;
   }
 }

@@ -71,11 +71,11 @@ class Governor { //<>//
     //// display results indicator
     HUDbuffer.pushMatrix();
     HUDbuffer.translate(camBufferWidth + margin*2, margin);
-    HUDbuffer.image(cardList.displayIndicator(), indicatorWidth, indicatorHeight);
+    HUDbuffer.image(cardList.displayIndicator(), 0, 0);
     
     //display results card
     HUDbuffer.translate(0, indicatorHeight + margin);
-    HUDbuffer.image(cardList.displayCard(), 0, 0);
+    HUDbuffer.image(cardList.displayCard(), 0, 0, cardWidth, cardHeight);
     HUDbuffer.popMatrix();
     HUDbuffer.endDraw();
   }

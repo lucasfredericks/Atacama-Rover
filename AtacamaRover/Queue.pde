@@ -12,7 +12,6 @@ class Queue {
   Hexgrid hexgrid;
   Hexagon scanDest;
   boolean newCommands;
-  float destinationHeading;
   float commandTotalDistance = 0;
   int checkCt = 0;
   PVector location;
@@ -68,19 +67,21 @@ class Queue {
       }
       //println("parsing queue into byte list");
       if (inBuffer[5] == 'n') {//if the user has pressed the button
+        println("executable command received");
+        newCommands = true;
         if (commandList.isExecutableCommand()) { //if the rover is already moving
           execute = false; //the first button press will cancel current execution.
         } else {
           execute = true;
         }
       } else { //if the user has not pressed the button, the arduino will send periodic updates anyway
+        newCommands = false;
         if (commandList.isExecutableCommand()) { //if the rover is driving and the user hasn't pressed the button,
           return;
         } else {
           execute = false;
         }
       }
-      newCommands = execute;
       int cardinalHeading = roundHeading(rover.heading); //calculate the command list from the rover's starting position and heading
       PVector hexKey = hexgrid.pixelToKey(rover.location);
       commandList.createList(mainQueue, funcQueue, hexKey, cardinalHeading, execute);
@@ -96,6 +97,14 @@ class Queue {
     } else {
       myPort.write('g'); //button green
     }
+  }
+  
+  void scan(){
+    Hexagon h = hexgrid.pixelToHex(rover.location);
+    if(cardList.scan(h, scanDest)){
+      pickScanDest();
+    }
+    
   }
 
   void pickScanDest() {
@@ -134,9 +143,11 @@ class Queue {
     GUI.pushMatrix();
     GUI.translate(0, GUI.height*.5);
     GUI.imageMode(CENTER);
-    GUI.fill(#0098be);
+    GUI.fill(#000000);
     GUI.noStroke();
     GUI.rectMode(CENTER);
+    GUI.rect(GUI.width/2, 0, GUI.width, GUI.height, 10);
+    GUI.fill(#0098be);
     ArrayList<RoverCommand> commands = commandList.getRCList();
     for (RoverCommand rc : commands) {
       GUI.translate(115, 0);
@@ -145,7 +156,7 @@ class Queue {
       if (rc.function) {
         GUI.rect(0, 0, 100, 100, 10);
       }
-      GUI.rotate(rc.radianDir);
+      //GUI.rotate(rc.radianDir);
       GUI.image(icon, 0, 0, 80, 80);
       GUI.popMatrix();
     }
@@ -176,6 +187,7 @@ class Queue {
   RoverCommand getCurrentCmd() {
     return commandList.getCurrentCmd();
   }
+  
 
   boolean checkQueue() {
     if (commandList.isEmpty() || commandList.isExecutableCommand() == false) {

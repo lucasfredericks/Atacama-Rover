@@ -10,7 +10,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
   PVector location;
   boolean inBounds;
   //boolean ready;
-  float turnMOE = 5;     // margin of error for turning. Given in degrees and converted to radians in constructor
+  float turnMOE = 10;     // margin of error for turning. Given in degrees and converted to radians in constructor
   String command;
   String lastCommandStr;
   float cmdMagnitude; //if the rover is moving forward, this is given in mm. If it's turning, it is in radians
@@ -69,11 +69,13 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
 
   void setDestHeading() {
 
-    PVector destination = currentCmd.getXY();
+    destination = currentCmd.getXY();
+    println("destination: " + destination);
     float dy = destination.y - location.y;
     float dx = destination.x - location.x;
     targetHeading = (atan2(dy, dx)+.5*PI);
     targetHeading = normalizeRadians(targetHeading);
+    println("set destination heading");
   }
 
   void setFinalHeading() {
@@ -82,6 +84,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
       targetHeading = normalizeRadians(targetHeading);
     } else {
       targetHeading = heading;
+      println("set final heading");
     }
   }
 
@@ -129,10 +132,15 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     }
     if (currentCmd == null) {
       command = "stop";
-    } else {
+    } else if(currentCmd.scan){
+            queue.scan();
+            currentCmd.scan = false;
+    }else {
+      setDestHeading();
       boolean turnBool = true; //boolean variables for wayfinding while driving
       boolean driveBool = true;
       float pxdist = PVector.dist(location, destination);
+      println("location = " + location + ", destination = " + destination + ", distance = " + pxdist);
       //set drive/turn variables
       dist = (float) getDistance();
 
