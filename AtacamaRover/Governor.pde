@@ -9,6 +9,10 @@ class Governor { //<>//
   Queue queue;
   CardList cardList;
   int hexSize = 50;
+  int cardWidth = 780;
+  int cardHeight = 720;
+  int indicatorWidth = 780;
+  int indicatorHeight = 280;
 
 
   Governor(PApplet sketch_, Hexgrid hexgrid_, int roverPort, int readerPort) {
@@ -16,7 +20,7 @@ class Governor { //<>//
     hexgrid = hexgrid_;
     String roverPortName = Serial.list()[roverPort];
     String queuePortName = Serial.list()[readerPort];
-    cardList = new CardList(780, 780);
+    cardList = new CardList(cardWidth, cardHeight);
     queueGUI = createGraphics(1080, 210);
     HUDbuffer = createGraphics(1920, 1080);
     hexgridBuffer = createGraphics(camBufferWidth, camBufferHeight);
@@ -43,31 +47,35 @@ class Governor { //<>//
 
     hexgridBuffer.beginDraw();
     hexgridBuffer.clear();
-    
+
     queue.drawHexes(hexgridBuffer);
     rover.displayHeading(hexgridBuffer);
     hexgridBuffer.endDraw();
 
-    //display queue
+    //display hex grid
     HUDbuffer.beginDraw();
     HUDbuffer.clear();
     HUDbuffer.pushMatrix();
     HUDbuffer.translate(margin, margin);
     HUDbuffer.image(hexgridBuffer, 0, 0, camBufferWidth, camBufferHeight);
+    
+    //display queue
     HUDbuffer.stroke(255);
     HUDbuffer.strokeWeight(4);
     HUDbuffer.noFill();
-    HUDbuffer.pushMatrix();
     HUDbuffer.translate(0, camBufferHeight + margin);
     HUDbuffer.image(queueGUI, 0, 0);
     //HUDbuffer.rect(0, 0, 1920, 120);
     HUDbuffer.popMatrix();
-    HUDbuffer.popMatrix();
-    //// display card
+    
+    //// display results indicator
     HUDbuffer.pushMatrix();
     HUDbuffer.translate(camBufferWidth + margin*2, margin);
-    HUDbuffer.image(cardList.display(), 0, 0);
-    //HUDbuffer.rect(0, 0, 640, 960);
+    HUDbuffer.image(cardList.displayIndicator(), indicatorWidth, indicatorHeight);
+    
+    //display results card
+    HUDbuffer.translate(0, indicatorHeight + margin);
+    HUDbuffer.image(cardList.displayCard(), 0, 0);
     HUDbuffer.popMatrix();
     HUDbuffer.endDraw();
   }

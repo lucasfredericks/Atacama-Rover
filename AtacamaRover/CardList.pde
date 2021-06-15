@@ -6,8 +6,15 @@ class CardList {
   PImage[] notFound;
   PImage instructions;
   PImage currentCard;
+  PImage indicatorLife;
+  PImage indicatorNoLife;
+  PImage indicatorSignOfLife;
+  PImage indicatorOff;
+  PImage currentIndicator;
+
   int cardWidth, cardHeight;
   PGraphics cardBuffer;
+  Animation lines;
 
   LoadingBar loadingBar;
 
@@ -28,6 +35,7 @@ class CardList {
     lastEvidence = 0;
     lastNoLife = 0;
     dispTimer = millis();
+    lines = new Animation("Line_animation/Line_animation_", 16);
     String path = sketchPath() + "/data/cardImages/found_evidence/";
     String[] evidenceFileNames = listFileNames(path);
     foundEvidence = new PImage[evidenceFileNames.length];
@@ -50,6 +58,12 @@ class CardList {
     path = sketchPath() + "/data/cardimages/instructions.png";
     instructions = loadImage(path);
     currentCard = instructions;
+    path = sketchPath() + "/data/results_indicator/";
+    indicatorLife = loadImage(path+"indicatorLife.png");
+    indicatorNoLife = loadImage(path+"indicatorNoLife.png");
+    indicatorSignOfLife = loadImage(path+"indicatorSignOfLife.png");
+    indicatorOff = loadImage(path+"indicatorOff.png");
+    currentIndicator = indicatorOff;
 
     loadingBar = new LoadingBar(400, 40);
   }
@@ -60,24 +74,31 @@ class CardList {
     }
   }
 
-  PImage display() {
+  PImage displayCard() {
     cardBuffer.beginDraw();
     cardBuffer.rectMode(CENTER); 
     cardBuffer.clear();
     cardBuffer.noStroke();
     cardBuffer.fill(#000000);
     cardBuffer.pushMatrix();
-    cardBuffer.translate(cardBuffer.width/2, cardBuffer.height/2);
-    cardBuffer.rect(0, 0, cardBuffer.width, cardBuffer.height, 10);
-    cardBuffer.popMatrix();
+    cardBuffer.translate(cardWidth/2, cardHeight/2);
+    cardBuffer.rect(0, 0, cardWidth, cardHeight, 10);
+
     if (millis() - scanTimer < 800) { //.8 second timer
-      loadingBar.display(cardBuffer.width/2, cardBuffer.height/2, cardBuffer);
+      loadingBar.display(0, 0, cardBuffer);
     } else {
       cardBuffer.imageMode(CENTER);
-      cardBuffer.image(currentCard, cardBuffer.width/2, cardBuffer.height/2, cardBuffer.width - 10, cardBuffer.height - 10);
+      cardBuffer.image(currentCard, 0, 0);
+      if (currentCard != instructions) {
+        cardBuffer.image(lines.display(), 0, 0);
+      }
     }
+    cardBuffer.popMatrix();
     cardBuffer.endDraw();
     return cardBuffer;
+  }
+  PImage displayIndicator(){
+   return currentIndicator; 
   }
 
   boolean scan(Hexagon location, Hexagon target) {
@@ -116,6 +137,7 @@ class CardList {
       i = int(random(0, foundLife.length));
     }
     currentCard = foundLife[i];
+    currentIndicator = indicatorLife;
   }
 
   void evidenceFound() {
@@ -125,6 +147,7 @@ class CardList {
       i = int(random(0, foundEvidence.length));
     }
     currentCard = foundEvidence[i];
+    currentIndicator = indicatorSignOfLife;
   }
 
   void noLifeFound() {
@@ -134,9 +157,12 @@ class CardList {
       i = int(random(0, notFound.length));
     }
     currentCard = notFound[i];
+    currentIndicator = indicatorNoLife;
   }
 
   PImage showInstructions() {
+    currentCard = instructions;
+    currentIndicator = indicatorOff;
     return instructions;
   }
 
@@ -184,5 +210,27 @@ class LoadingBar {
     buffer.popMatrix();
     iter = (iter + 2) % barWidth;
     return buffer;
+  }
+}
+class Animation {
+  PImage[] images;
+  int imageCount;
+  int frame;
+
+  Animation(String imagePrefix, int count) {
+    imageCount = count;
+    images = new PImage[imageCount];
+
+    for (int i = 0; i < imageCount; i++) {
+      // Use nf() to number format 'i' into four digits
+      String filename = imagePrefix + nf(i, 4) + ".gif";
+      images[i] = loadImage(filename);
+    }
+  }
+
+  PImage display() {
+    frame = (frame+1) % imageCount;
+    PImage anim = images[frame];
+    return anim;
   }
 }
