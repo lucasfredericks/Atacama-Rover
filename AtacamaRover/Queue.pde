@@ -141,12 +141,9 @@ class Queue {
     //GUI.background(0, 255, 255);
     GUI.clear();
     GUI.pushMatrix();
-    GUI.translate(0, GUI.height*.5);
+    GUI.translate(0, GUI.height/2);
     GUI.imageMode(CENTER);
-    GUI.fill(#000000);
-    GUI.noStroke();
     GUI.rectMode(CENTER);
-    GUI.rect(GUI.width/2, 0, GUI.width, GUI.height, 10);
     GUI.fill(#0098be);
     ArrayList<RoverCommand> commands = commandList.getRCList();
     for (RoverCommand rc : commands) {

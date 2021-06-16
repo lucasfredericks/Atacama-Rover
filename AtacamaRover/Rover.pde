@@ -248,8 +248,6 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     buffer.strokeWeight(2);
     buffer.fill(255);
     buffer.stroke(0);
-    buffer.textSize(24);
-    buffer.pushMatrix();
     buffer.rotate(heading);
     buffer.beginShape();
     buffer.vertex(0, 20);
@@ -260,21 +258,6 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     //buffer.stroke(255, 0, 0);
     //buffer.line(0, 0, 0, - 50);
     buffer.popMatrix();
-    buffer.pushMatrix();
-    buffer.rotate(targetHeading);
-    buffer.stroke(0, 255, 0);
-    buffer.line(0, 0, 0, - 50);
-    buffer.popMatrix();
-    buffer.noStroke();
-    buffer.ellipse(0, 0, 10, 10);
-    buffer.popMatrix();
-    if (queue.checkQueue()) {
-      buffer.pushMatrix();
-      buffer.translate(destination.x*camScale, destination.y*camScale);
-      buffer.stroke(255, 0, 0);
-      buffer.ellipse(0, 0, 10, 10);
-      buffer.popMatrix();
-    }
     buffer.endDraw();
   }
 }

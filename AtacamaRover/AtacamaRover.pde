@@ -134,8 +134,8 @@ void draw() {
   pushMatrix();
   String stats = ("framerate: " + int(frameRate) + ",  CV latency: " + cvThread.latencyRatio + ", watchdog: " + governor1.getWatchdog());
   textSize(15);
-  fill(0);
-  translate(20, height-20);
+  fill(255);
+  translate(width - 350, height-20);
   text(stats, 0, 0);
   popMatrix();
 }

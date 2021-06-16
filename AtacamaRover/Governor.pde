@@ -58,21 +58,20 @@ class Governor { //<>//
     HUDbuffer.pushMatrix();
     HUDbuffer.translate(margin, margin);
     HUDbuffer.image(hexgridBuffer, 0, 0, camBufferWidth, camBufferHeight);
-    
+
     //display queue
-    HUDbuffer.stroke(255);
-    HUDbuffer.strokeWeight(4);
-    HUDbuffer.noFill();
+    HUDbuffer.noStroke();
+    HUDbuffer.fill(0);
     HUDbuffer.translate(0, camBufferHeight + margin);
-    HUDbuffer.image(queueGUI, 0, 0);
-    //HUDbuffer.rect(0, 0, 1920, 120);
-    HUDbuffer.popMatrix();
-    
+    HUDbuffer.rect(0, 0, 1080, 210, 20);
+    HUDbuffer.image(queueGUI, 0, 0, 1080, 210);
+    HUDbuffer.popMatrix(); 
+
     //// display results indicator
     HUDbuffer.pushMatrix();
     HUDbuffer.translate(camBufferWidth + margin*2, margin);
     HUDbuffer.image(cardList.displayIndicator(), 0, 0);
-    
+
     //display results card
     HUDbuffer.translate(0, indicatorHeight + margin);
     HUDbuffer.image(cardList.displayCard(), 0, 0, cardWidth, cardHeight);
