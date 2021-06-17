@@ -71,6 +71,7 @@ class CardList {
 
   void run() {
     if (millis() - dispTimer > dispTimeout && currentCard != instructions) {
+      animate=false;
       currentCard = instructions;
     }
   }
