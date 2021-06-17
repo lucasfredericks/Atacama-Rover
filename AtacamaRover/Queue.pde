@@ -98,13 +98,12 @@ class Queue {
       myPort.write('g'); //button green
     }
   }
-  
-  void scan(){
+
+  void scan() {
     Hexagon h = hexgrid.pixelToHex(rover.location);
-    if(cardList.scan(h, scanDest)){
+    if (cardList.scan(h, scanDest)) {
       pickScanDest();
     }
-    
   }
 
   void pickScanDest() {
@@ -113,7 +112,7 @@ class Queue {
     do {
       Object randHexKey = keys[new Random().nextInt(keys.length)];
       h = hexgrid.getHex((PVector)randHexKey);
-    } while (h!= scanDest);
+    } while (h == scanDest);
     scanDest = h;
     println("pick scan dest complete");
   }
@@ -183,7 +182,7 @@ class Queue {
   RoverCommand getCurrentCmd() {
     return commandList.getCurrentCmd();
   }
-  
+
 
   boolean checkQueue() {
     if (commandList.isEmpty() || commandList.isExecutableCommand() == false) {

@@ -102,8 +102,8 @@ void initArena() {
 
 void draw() {
 
-  if (cam.available() == true) { //<>//
-    cam.read(); //<>//
+  if (cam.available() == true) {
+    cam.read();
     background(#3b3b3c);
     if (cvThread.dataFlag) {
 
@@ -127,7 +127,7 @@ void draw() {
     governor1.run();
   }
   ////canvas.beginDraw();
-  image(cam, margin, margin, camBufferWidth, camBufferHeight); //<>//
+  image(cam, margin, margin, camBufferWidth, camBufferHeight);
   //image(arenaMask, 0, 0, camBufferWidth, camBufferHeight);
   image(gridOutlines, margin, margin);
   image(governor1.displayHUD(), 0, 0);

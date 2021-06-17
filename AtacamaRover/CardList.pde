@@ -26,7 +26,7 @@ class CardList {
 
   long scanTimer = 0;
   long dispTimer;
-  long dispTimeout = 120000;
+  long dispTimeout = 90000;
 
   CardList(int cardWidth_, int cardHeight_) {
     cardWidth = cardWidth_;
@@ -115,7 +115,7 @@ class CardList {
     //println(d);
     //println(location);
     //println(target);
-    float r = random(0, 10);
+    float r = random(0, 10); //<>//
     if (lKey == tKey) {
       lifeFound();
       return true;
