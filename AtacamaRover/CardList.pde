@@ -73,7 +73,6 @@ class CardList {
     if (millis() - dispTimer > dispTimeout && currentCard != instructions) {
       currentCard = instructions;
     }
-    
   }
 
   PImage displayCard() {
@@ -95,30 +94,34 @@ class CardList {
         cardBuffer.imageMode(CORNER);
         cardBuffer.popMatrix();
         cardBuffer.pushMatrix();
-        cardBuffer.translate(445,112);
-        cardBuffer.image(lines.display(), 0, 0, 300,531);
-
+        cardBuffer.translate(445, 112);
+        cardBuffer.image(lines.display(), 0, 0, 300, 531);
       }
     }
     cardBuffer.popMatrix();
     cardBuffer.endDraw();
     return cardBuffer;
   }
-  PImage displayIndicator(){
-   return currentIndicator; 
+  PImage displayIndicator() {
+    return currentIndicator;
   }
 
   boolean scan(Hexagon location, Hexagon target) {
     scanTimer = millis();
-    float d = location.getXY().dist(target.getXY());
-    println(d);
-    println(location);
-    println(target);
+
+    PVector lKey = location.getKey();
+    PVector tKey = target.getKey();
+    //println(d);
+    //println(location);
+    //println(target);
     float r = random(0, 10);
-    if (location == target) {
+    if (lKey == tKey) {
       lifeFound();
       return true;
-    } else if (d <= 2*hexSize) {
+    } 
+    float d = location.getXY().dist(target.getXY());
+
+    if (d <= 2*hexSize) {
       if (r>3) {
         evidenceFound();
       } else { 

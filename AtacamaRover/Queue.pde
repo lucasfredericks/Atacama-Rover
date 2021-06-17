@@ -108,7 +108,6 @@ class Queue {
   }
 
   void pickScanDest() {
-    println("pick scan dest start");
     Hexagon h;
     Object[] keys = hexgrid.allHexes.keySet().toArray();
     do {
