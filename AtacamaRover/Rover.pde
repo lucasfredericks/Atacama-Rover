@@ -70,12 +70,12 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
   void setDestHeading() {
 
     destination = currentCmd.getXY();
-    println("destination: " + destination);
+    //println("destination: " + destination);
     float dy = destination.y - location.y;
     float dx = destination.x - location.x;
     targetHeading = (atan2(dy, dx)+.5*PI);
     targetHeading = normalizeRadians(targetHeading);
-    println("set destination heading");
+    //println("set destination heading");
   }
 
   void setFinalHeading() {
@@ -140,7 +140,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
       boolean turnBool = true; //boolean variables for wayfinding while driving
       boolean driveBool = true;
       float pxdist = PVector.dist(location, destination);
-      println("location = " + location + ", destination = " + destination + ", distance = " + pxdist);
+      //println("location = " + location + ", destination = " + destination + ", distance = " + pxdist);
       //set drive/turn variables
       dist = (float) getDistance();
 
