@@ -256,7 +256,7 @@ void setup() {
 //  pinMode(I1, OUTPUT);
 //  pinMode(I2, OUTPUT);
 //  digitalWrite(I1, LOW);
-//  float desiredLimit = .75;
+//  float desiredLimit =
 //  float maxCurrent = 2;
 //  int pwmVal = int((desiredLimit / maxCurrent) * 255);
 //  digitalWrite(I1, pwmVal);
