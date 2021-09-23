@@ -40,8 +40,12 @@ int servoSETurn = 90;
 
 // Specify the links and initial tuning parameters for PID
 double Kp = .55, Ki = .05, Kd = 0.05;
+//PID_v2 lPID(Kp, Ki, Kd, PID::Direct, PID::P_On::Measurement);
+//PID_v2 rPID(Kp, Ki, Kd, PID::Direct, PID::P_On::Measurement);
+
 PID_v2 lPID(Kp, Ki, Kd, PID::Direct);
 PID_v2 rPID(Kp, Ki, Kd, PID::Direct);
+
 
 //Set up variables
 long lSetpoint;
@@ -320,15 +324,16 @@ void loop() {
     Serial.print(", ");
     Serial.print(lInput);
     Serial.print(", ");
-    Serial.print(lOutput);
-    Serial.print(", R: ");
+    Serial.println(lOutput);
+    Serial.print("R: ");
     Serial.print(rSetpoint);
     Serial.print(", ");
-    Serial.print(lPosition);
+    Serial.println(rPosition);
     Serial.print(", ");
     Serial.print(rInput);
     Serial.print(", ");
     Serial.println(rOutput);
+    Serial.println(" ");
   }
   if (moveComplete == false) {
     if (rOutput < 0) {
@@ -347,7 +352,7 @@ void loop() {
     analogWrite(M1PWM, abs(lOutput));
     analogWrite(M2PWM, abs(rOutput));
 
-    if ((abs(lOutput) < 20) && (abs(rOutput) < 20)) {
+    if ((abs(lOutput) < 40) && (abs(rOutput) < 40)) {
       moveComplete = true;
       goToSleep();
     }
