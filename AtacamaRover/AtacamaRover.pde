@@ -35,6 +35,7 @@ CameraPinholeBrown intrinsic;
 PGraphics arenaMask;
 
 void setup() {
+  noCursor();
   frameRate(30);
   noSmooth();
   camScale = float(camBufferWidth)/float(camWidth);
