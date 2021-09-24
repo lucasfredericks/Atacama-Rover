@@ -33,15 +33,15 @@ class RoverCommand extends Hexagon {
     radianDir = radians(cardHtoTheta[cardinalDir]);
     String iconName = "";
     if (cmdByte == 119) { // 'w' forward
-      iconName = "forward.jpg";
+      iconName = "forward.png";
     } else if (cmdByte == 97) { // 'a' counterclockwise
-      iconName = "counterclockwise.jpg";
+      iconName = "counterclockwise.png";
     } else if (cmdByte == 115) { // 's' back
-      iconName = "uturn.jpg";
+      iconName = "uturn.png";
     } else if (cmdByte == 100) { // 'd' right/clockwise
-      iconName = "clockwise.jpg";
+      iconName = "clockwise.png";
     } else if (cmdByte==101) { // 'e' scan for life
-      iconName = "scan.jpg";
+      iconName = "scan.png";
       scan = true;
     }
     String path = sketchPath() + "/data/icons/" + iconName;

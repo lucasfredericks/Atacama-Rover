@@ -3,6 +3,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
   PApplet sketch;
   Hexgrid hexgrid;
   Queue queue;
+  PImage icon;
   float heading = 0;
   float targetHeading = 0;
   float dist = 0;
@@ -32,6 +33,8 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     turnMOE = radians(turnMOE);
     handshake = true;
     watchdog = 11; //set watchdog high, so nothing will happen until the rover is located at least once
+    String path = sketchPath() + "/data/icons/rover_arrow.png";
+    icon= loadImage(path);
   }
   void initQueue(Queue queue_) {
     queue = queue_;
@@ -132,10 +135,10 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     }
     if (currentCmd == null) {
       command = "stop";
-    } else if(currentCmd.scan){
-            queue.scan();
-            currentCmd.scan = false;
-    }else {
+    } else if (currentCmd.scan) {
+      queue.scan();
+      currentCmd.scan = false;
+    } else {
       setDestHeading();
       boolean turnBool = true; //boolean variables for wayfinding while driving
       boolean driveBool = true;
@@ -245,16 +248,18 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     buffer.beginDraw();
     buffer.pushMatrix();
     buffer.translate(location.x * camScale, location.y * camScale);
-    buffer.strokeWeight(2);
+    buffer.strokeWeight(4);
     buffer.fill(255);
     buffer.stroke(0);
     buffer.rotate(heading);
-    buffer.beginShape();
-    buffer.vertex(0, 20);
-    buffer.vertex(20, 30);
-    buffer.vertex(0, -30);
-    buffer.vertex(-20, 30);
-    buffer.endShape(CLOSE);
+    buffer.imageMode(CENTER);
+    buffer.image(icon, 0, 0, 45,60);
+    //buffer.beginShape();
+    //buffer.vertex(0, 20);
+    //buffer.vertex(20, 30);
+    //buffer.vertex(0, -30);
+    //buffer.vertex(-20, 30);
+    //buffer.endShape(CLOSE);
     //buffer.stroke(255, 0, 0);
     //buffer.line(0, 0, 0, - 50);
     buffer.popMatrix();
