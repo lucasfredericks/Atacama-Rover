@@ -1,4 +1,4 @@
-import processing.serial.*; //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
+import processing.serial.*; //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
 import java.util.Iterator;
 import boofcv.processing.*;
 PGraphics GUI;
@@ -71,7 +71,8 @@ class Queue {
         newCommands = true;
         if (commandList.isExecutableCommand()) { //if the rover is already moving
           execute = false; //the first button press will cancel current execution.
-          commandComplete();
+          commandList.clearList();
+          rover.currentCmd = null;
         } else {
           execute = true;
         }
