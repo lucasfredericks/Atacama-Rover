@@ -72,7 +72,7 @@ class Queue {
         if (commandList.isExecutableCommand()) { //if the rover is already moving
           execute = false; //the first button press will cancel current execution.
           commandList.clearList();
-          rover.currentCmd = null;
+          
         } else {
           execute = true;
         }

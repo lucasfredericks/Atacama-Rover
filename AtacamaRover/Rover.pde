@@ -118,6 +118,10 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
       sendCommand();
     }
   }
+  
+  void clearCommand(){
+    
+  }
 
   void setCommand() {
     
