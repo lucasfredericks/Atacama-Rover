@@ -20,7 +20,7 @@ int bluePin = 11;
 
 volatile boolean button;
 unsigned long lastButton;
-int debounce = 300; //milli time comparison to debounce button
+int debounce = 1000; //milli time comparison to debounce button
 long resendTimer;
 
 boolean debug = false;
@@ -157,7 +157,7 @@ void setup() {
   pinMode(debugPin, INPUT_PULLUP);
   pinMode(dataPin, INPUT);
   pinMode(interruptPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(interruptPin), buttonPress, FALLING);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), buttonPress, RISING);
   button = false;
   lastButton = millis();
   clearQueue();

@@ -1,4 +1,4 @@
-import processing.serial.*; //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
+import processing.serial.*; //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
 import java.util.Iterator;
 import boofcv.processing.*;
 PGraphics GUI;
@@ -71,6 +71,8 @@ class Queue {
         newCommands = true;
         if (commandList.isExecutableCommand()) { //if the rover is already moving
           execute = false; //the first button press will cancel current execution.
+          commandList.clearList();
+          rover.currentCmd = null;
         } else {
           execute = true;
         }
@@ -145,11 +147,12 @@ class Queue {
     GUI.fill(#0098be);
     ArrayList<RoverCommand> commands = commandList.getRCList();
     for (RoverCommand rc : commands) {
-      GUI.translate(115, 0);
+      GUI.translate(100, 0);
       GUI.pushMatrix();
       PImage icon = rc.getIcon();
       if (rc.function) {
-        GUI.rect(0, 0, 100, 100, 10);
+        GUI.noStroke();
+        GUI.rect(0, 0, 102, 102);
       }
       //GUI.rotate(rc.radianDir);
       GUI.image(icon, 0, 0, 80, 80);
@@ -212,7 +215,7 @@ class Queue {
 
   void commandComplete() {
     checkCt = 0;
-    println("command complete");
+    //println("command complete");
     commandList.commandComplete(); //deletes current cmd
   }
   //void nextCommand() {
