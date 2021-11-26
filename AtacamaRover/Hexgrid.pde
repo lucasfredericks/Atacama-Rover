@@ -151,6 +151,16 @@ class Hexgrid {
     }
     return(neighborList);
   }
+  PVector[] getNeighborIDs(PVector hexID) {
+    PVector[] neighborList = new PVector[6];
+    PVector neighborID = new PVector();
+    for (int i = 0; i < 6; i++) {
+      neighborID.set(hexID);
+      neighborID = neighborID.add(neighbors[i]);
+      neighborList[i] = neighborID;
+    }
+    return(neighborList);
+  }
 
   boolean checkHex(PVector hexKey_) {
     return (allHexes.containsKey(hexKey_));
@@ -205,6 +215,18 @@ class Hexgrid {
     PVector rHexID = new PVector(rx, ry, rz);
     return(rHexID);
   }
+  float normalizeRadians(float theta) {
+    while (theta < 0 || theta > TWO_PI) {
+      if (theta < 0) {
+        theta += TWO_PI;
+      }
+      if (theta > TWO_PI) {
+        theta -= TWO_PI;
+      }
+    }
+    return theta;
+  }
+
 
   Point2D_F64 worldToPixel(Point3D_F64 rwLoc) {
     Point2D_F64 px = new Point2D_F64();

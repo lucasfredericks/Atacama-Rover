@@ -68,7 +68,6 @@ class CommandList {
     ArrayList<BytePlus> byteList = parseRawCmds(mainQueue, funcQueue);
     commands.clear();
     boolean drive = false;
-    clearList();
     for (BytePlus bp : byteList) {
       if (bp.cmd == 119) { // 'w' forward
         drive = true;
@@ -99,6 +98,13 @@ class CommandList {
       RoverCommand rc = new RoverCommand(hexgrid, hexKey, cardinalHeading, bp.cmd, bp.function, execute);
       commands.add(rc);
     }
+  }
+  
+  void customCommand(PVector hexKey, int cardinalHeading){
+    commands.clear();
+    byte cmd = 119;
+    RoverCommand customCommand = new RoverCommand(hexgrid, hexKey, cardinalHeading, cmd, false, true);
+    commands.add(customCommand);
   }
 
   void clearList() {

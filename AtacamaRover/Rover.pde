@@ -16,7 +16,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
   String lastCommandStr;
   float cmdMagnitude; //if the rover is moving forward, this is given in mm. If it's turning, it is in radians
   Se3_F64 roverToCamera;
-  
+
 
   int watchdog;
   long handshakeTimer;
@@ -81,6 +81,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     //println("set destination heading");
   }
 
+
   void setFinalHeading(RoverCommand currentCmd) {
     if (currentCmd.cmdByte == 'a' || currentCmd.cmdByte == 'd' || currentCmd.cmdByte == 's') { //only reorient 
       targetHeading = currentCmd.getRadianDir();
@@ -92,6 +93,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
   }
 
   void updateLocation(FiducialFound f) {
+    watchdog = 0;
     roverToCamera=f.getFiducialToCamera();
     DMatrixRMaj rMatrix = f.getFiducialToCamera().getR();
     double[] euler;
@@ -102,29 +104,24 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     //rover.location = location;
     queue.location = location;
     PVector hexID = hexgrid.pixelToKey(location);
-    if (hexgrid.checkHex(hexID)) {
-      drive();
+    if (hexgrid.checkHex(hexID) == false) {
+      queue.returnToArena();
     }
+    drive();
   }
 
 
   void drive() {
-    watchdog = 0;
-    //if (queue.checkNew()) { //if the user has pressed the button, stop the current command
-    //  //resetVars();
-    //}
     setCommand();
     if (handshake && (millis()-handshakeTimer > 500)) {
       sendCommand();
     }
   }
-  
-  void clearCommand(){
-    
-  }
+
+
 
   void setCommand() {
-    
+
     RoverCommand currentCmd = null;
     if (queue.checkQueue()) {             //if there are executable commands in the queue
       currentCmd = queue.getCurrentCmd(); // sets currentcmd to commandlist<0> 
@@ -191,7 +188,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
   }
 
   double getDistance(RoverCommand currentCmd) {
-    
+
     double dist = currentCmd.getDist(roverToCamera);
     return dist;
   }
@@ -259,7 +256,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     buffer.stroke(0);
     buffer.rotate(heading);
     buffer.imageMode(CENTER);
-    buffer.image(icon, 0, 0, 45,60);
+    buffer.image(icon, 0, 0, 45, 60);
     //buffer.beginShape();
     //buffer.vertex(0, 20);
     //buffer.vertex(20, 30);

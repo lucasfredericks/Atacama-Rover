@@ -133,8 +133,8 @@ void recvWithEndMarker() {
   char rc;
 
   // if (Serial.available() > 0) {
-  while (Serial.available() > 0 && newData == false) {
-    rc = Serial.read();
+  while (Serial1.available() > 0 && newData == false) {
+    rc = Serial1.read();
 
     if (rc != endMarker) {
       receivedChars[ndx] = rc;
@@ -191,7 +191,7 @@ void drive() {
 }
 
 void goToSleep() {
-  Serial.println('r');
+  Serial1.println('r');
   digitalWrite(sleepPin, LOW);
   detachServos();
   watchdog = millis();
@@ -212,7 +212,15 @@ void setGeometryConsts() {
 }
 void setup() {
 
-  Serial.begin(9600);
+  //Power saving 
+  for (int i = 14; i <= 19; i++){
+    pinMode(i, OUTPUT);
+    digitalWrite(i, LOW);
+  }
+  // disable ADC
+  ADCSRA = 0;  
+
+  Serial1.begin(9600);
   setGeometryConsts();
 
   watchdog = millis();

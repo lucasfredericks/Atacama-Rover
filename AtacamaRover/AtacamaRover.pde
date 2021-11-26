@@ -76,18 +76,23 @@ void initArena() {
       //println("fiducials found");
       List<FiducialFound> found = cvThread.getFiducials();
       for ( FiducialFound f : found ) {
-        //println(f.getId());
-        //heptagon interior angle: 128.571 ~= .9 radians
         if ((int)f.getId()==1234) {
           println("arena found");
           Arena arena = new Arena();
           worldToCamera.set(f.getFiducialToCamera());
-          Point3D_F64 [] rwcorners = new Point3D_F64[7];
           Point2D_F64 [] pxCorners = new Point2D_F64[7];
+          Point3D_F64 [] rwcorners = { //rw coordinates of arena corners in centimeters, with CV marker at (0,0)
+            new Point3D_F64(180, 110, 0), 
+            new Point3D_F64(170, 0, 0), 
+            new Point3D_F64(70, -40, 0), 
+            new Point3D_F64(0, -30, 0), 
+            new Point3D_F64(-30, -10, 0), 
+            new Point3D_F64(-30, 120, 0), 
+            new Point3D_F64(70, 160, 0), 
+          };
           for (int i = 0; i < 7; i++) {
-            float theta = i*.9;
-            rwcorners[i] = new Point3D_F64(110*cos(theta)/lambda, 110*sin(theta)/lambda, roverHeight/lambda);
-            pxCorners[i] = new Point2D_F64(0, 0);
+            rwcorners[i].set(rwcorners[i].x/lambda, rwcorners[i].y/lambda, roverHeight/lambda);
+            //pxCorners[i] = new Point2D_F64(0, 0);
             SePointOps_F64.transform(worldToCamera, rwcorners[i], rwcorners[i]);
             PerspectiveOps.convertNormToPixel(intrinsic, rwcorners[i].x/rwcorners[i].z, rwcorners[i].y/rwcorners[i].z, pxCorners[i]);
             ellipse((float)pxCorners[i].x, (float)pxCorners[i].y, 20, 20);

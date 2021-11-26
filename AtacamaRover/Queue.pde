@@ -72,9 +72,9 @@ class Queue {
         if (commandList.isExecutableCommand()) { //if the rover is already moving
           execute = false; //the first button press will cancel current execution.
           commandList.clearList();
-          
         } else {
           execute = true;
+          commandList.clearList();
         }
       } else { //if the user has not pressed the button, the arduino will send periodic updates anyway
         newCommands = false;
@@ -105,6 +105,26 @@ class Queue {
     Hexagon h = hexgrid.pixelToHex(rover.location);
     if (cardList.scan(h, scanDest)) {
       pickScanDest();
+    }
+  }
+
+  void returnToArena() {
+    commandList.clearList();
+    PVector hexID = hexgrid.pixelToKey(rover.location);
+    PVector[] neighbors = hexgrid.getNeighborIDs(hexID);
+    for (int i = 0; i < neighbors.length; i++) {
+      if (hexgrid.checkHex(neighbors[i])) {
+        //drive to hex
+        PVector middle = new PVector(camWidth/2, camHeight/2);
+        //println("destination: " + destination);
+        float dy = middle.y - location.y;
+        float dx = middle.x - location.x;
+        float targetHeading = (atan2(dy, dx)+.5*PI);
+        targetHeading = hexgrid.normalizeRadians(targetHeading);
+        int cardinalHeading = roundHeading(targetHeading);
+        commandList.customCommand(neighbors[i], cardinalHeading);
+        break;
+      }
     }
   }
 
