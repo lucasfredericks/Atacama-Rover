@@ -11,7 +11,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
   PVector location;
   boolean inBounds = true;
   //boolean ready;
-  float turnMOE = 10;     // margin of error for turning. Given in degrees and converted to radians in constructor
+  float turnMOE = 8;     // margin of error for turning. Given in degrees and converted to radians in constructor
   String command;
   String lastCommandStr;
   float cmdMagnitude; //if the rover is moving forward, this is given in mm. If it's turning, it is in radians
@@ -219,11 +219,11 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     }
 
     String cmdString = commandByte + "," + cmdMagnitude;
-    if (!cmdString.equals(lastCommandStr)) {
+    if(commandByte != ' '){
       myPort.write(cmdString + '\n');
-      println("command (noByte): " + cmdString);
-      lastCommandStr = cmdString;
-      handshake = false;
+    println("command: " + cmdString);
+    //  lastCommandStr = cmdString;
+    handshake = false;
     }
   }
 
@@ -231,12 +231,12 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
 
     if (commandByte == 'a' || commandByte == 'd' || commandByte == 'w' || commandByte == ' ') {
       String cmdString = commandByte + "," + cmdMagnitude;
-      if (!cmdString.equals(lastCommandStr)) {
+      //if (!cmdString.equals(lastCommandStr)) {
         myPort.write(cmdString + '\n');
         lastCommandStr = cmdString;
         println("command (byte): " + cmdString);
         handshake = false;
-      }
+      //}
     }
   }
   void stop_() {

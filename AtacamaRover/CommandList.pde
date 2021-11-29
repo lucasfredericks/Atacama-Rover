@@ -52,17 +52,25 @@ class CommandList {
     color fnColor = #0098be;
     for (RoverCommand rc : commands) {
       if (rc.function) {
-        rc.drawHexOutline(buffer, fnColor, 6);
+        rc.drawHexOutline(buffer, fnColor, 4);
       }
       if (rc.execute) {
         if (rc.inBounds) {
-          rc.drawHexFill(buffer, c_, 80);
+          if (rc.function) {
+            rc.drawHexFill(buffer, fnColor, 150);
+          } else {
+            rc.drawHexFill(buffer, c_, 150);
+          }
         } else {
-          rc.drawHexFill(buffer, d_, 80);
+          rc.drawHexFill(buffer, d_, 150);
         }
       } else {
         if (rc.inBounds) {
-          rc.drawHexFill(buffer, c_, 150);
+          if (rc.function) {
+            rc.drawHexFill(buffer, fnColor, 75);
+          } else {
+            rc.drawHexFill(buffer, c_, 75);
+          }
         } else {
           rc.drawHexFill(buffer, d_, 150);
         }

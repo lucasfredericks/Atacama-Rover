@@ -79,6 +79,8 @@ class Queue {
       } else { //if the user has not pressed the button, the arduino will send periodic updates anyway
         newCommands = false;
         if (commandList.isExecutableCommand()) { //if the rover is driving and the user hasn't pressed the button,
+          setButtonColor();
+          updateGUI();
           return;
         } else {
           execute = false;

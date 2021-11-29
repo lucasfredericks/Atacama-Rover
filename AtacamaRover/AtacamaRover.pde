@@ -83,12 +83,12 @@ void initArena() {
           Point2D_F64 [] pxCorners = new Point2D_F64[7];
           Point3D_F64 [] rwcorners = { //rw coordinates of arena corners in centimeters, with CV marker at (0,0)
             new Point3D_F64(180, 110, 0), 
-            new Point3D_F64(170, 0, 0), 
-            new Point3D_F64(70, -40, 0), 
-            new Point3D_F64(0, -30, 0), 
+            new Point3D_F64(180, 0, 0), 
+            new Point3D_F64(100, -50, 0), 
+            new Point3D_F64(30, -50, 0), 
             new Point3D_F64(-30, -10, 0), 
-            new Point3D_F64(-30, 120, 0), 
-            new Point3D_F64(70, 160, 0), 
+            new Point3D_F64(-40, 120, 0), 
+            new Point3D_F64(90, 160, 0), 
           };
           for (int i = 0; i < 7; i++) {
             rwcorners[i].set(rwcorners[i].x/lambda, rwcorners[i].y/lambda, roverHeight/lambda);

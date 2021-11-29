@@ -20,7 +20,7 @@ int bluePin = 11;
 
 volatile boolean button;
 unsigned long lastButton;
-int debounce = 1000; //milli time comparison to debounce button
+int debounce = 500; //milli time comparison to debounce button
 long resendTimer;
 
 boolean debug = false;
