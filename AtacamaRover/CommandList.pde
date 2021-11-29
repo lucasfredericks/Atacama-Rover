@@ -49,12 +49,22 @@ class CommandList {
   void drawHexes(PGraphics buffer) {
     color c_ = #aae4df; 
     color d_ = #ff0000;
+    color fnColor = #0098be;
     for (RoverCommand rc : commands) {
+      if (rc.function) {
+        rc.drawHexOutline(buffer, fnColor, 6);
+      }
       if (rc.execute) {
         if (rc.inBounds) {
-          rc.drawHexFill(buffer, c_, 120);
+          rc.drawHexFill(buffer, c_, 80);
         } else {
-          rc.drawHexFill(buffer, d_, 120);
+          rc.drawHexFill(buffer, d_, 80);
+        }
+      } else {
+        if (rc.inBounds) {
+          rc.drawHexFill(buffer, c_, 150);
+        } else {
+          rc.drawHexFill(buffer, d_, 150);
         }
       }
     }
@@ -99,8 +109,8 @@ class CommandList {
       commands.add(rc);
     }
   }
-  
-  void customCommand(PVector hexKey, int cardinalHeading){
+
+  void customCommand(PVector hexKey, int cardinalHeading) {
     commands.clear();
     byte cmd = 119;
     RoverCommand customCommand = new RoverCommand(hexgrid, hexKey, cardinalHeading, cmd, false, true);

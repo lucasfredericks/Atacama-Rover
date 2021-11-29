@@ -14,9 +14,9 @@ class Queue {
   boolean newCommands;
   float commandTotalDistance = 0;
   int checkCt = 0;
-  PVector location;
+  //PVector location;
 
-  PVector moveStartLocation;
+  //PVector moveStartLocation;
 
   //ArrayList<Byte> byteList;
   CommandList commandList;
@@ -33,11 +33,11 @@ class Queue {
     GUI = GUI_;
     myPort = new Serial(sketch, serial, 115200);
     println("queue Serial init");
-    moveStartLocation = new PVector();
+    //moveStartLocation = new PVector();
     Object[] keys = hexgrid.allHexes.keySet().toArray();
     Object randHexKey = keys[new Random().nextInt(keys.length)];
     scanDest = hexgrid.getHex((PVector)randHexKey);
-    location = new PVector(camWidth/2, camHeight/2);
+    //location = new PVector(camWidth/2, camHeight/2);
     commandList = commandList_;    
     println("queue init complete");
   }
@@ -110,23 +110,26 @@ class Queue {
 
   void returnToArena() {
     commandList.clearList();
-    PVector hexID = hexgrid.pixelToKey(rover.location);
-    PVector[] neighbors = hexgrid.getNeighborIDs(hexID);
-    for (int i = 0; i < neighbors.length; i++) {
-      if (hexgrid.checkHex(neighbors[i])) {
-        //drive to hex
-        PVector middle = new PVector(camWidth/2, camHeight/2);
-        //println("destination: " + destination);
-        float dy = middle.y - location.y;
-        float dx = middle.x - location.x;
-        float targetHeading = (atan2(dy, dx)+.5*PI);
-        targetHeading = hexgrid.normalizeRadians(targetHeading);
-        int cardinalHeading = roundHeading(targetHeading);
-        commandList.customCommand(neighbors[i], cardinalHeading);
-        break;
-      }
-    }
+    PVector middle = new PVector(camWidth/2, camHeight/2);
+    PVector tempDest = new PVector();
+    PVector tempKey = new PVector();
+    int i = 1;
+    float dy;
+    float dx;
+    do {
+      dy = lerp(rover.location.y, middle.y, i* .05); //linear interpolation towards center of arena //<>//
+      dx = lerp(rover.location.x, middle.x, i* .05);
+      tempDest.set(dx, dy);
+      tempKey = hexgrid.pixelToKey(tempDest);
+      i++;
+    } while (hexgrid.checkHex(tempKey) == false); //lerp until we find an inbounds hex
+    println("return trajectory found");
+    float targetHeading = (atan2(tempDest.y, tempDest.x)+.5*PI);
+    targetHeading = hexgrid.normalizeRadians(targetHeading);
+    int cardinalHeading = roundHeading(targetHeading);
+    commandList.customCommand(tempKey, cardinalHeading);
   }
+
 
   void pickScanDest() {
     Hexagon h;
@@ -238,19 +241,5 @@ class Queue {
     //println("command complete");
     commandList.commandComplete(); //deletes current cmd
   }
-  //void nextCommand() {
-  //  if (!commandList.isEmpty()) {
-  //    currentCommand = commandList.get(0);
-  //    //println("setting next command");
-  //    if (isExecutableCommand()) {
-  //      myPort.write('r');
-  //      //println("button red");
-  //    }
-  //  } else {
-  //    myPort.write('g');
-  //    //println("button green");
-  //    currentCommand = null;
-  //    //println("cc null");
-  //  }
-  //}
+
 }

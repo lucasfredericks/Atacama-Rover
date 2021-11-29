@@ -9,7 +9,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
   float dist = 0;
   PVector destination;
   PVector location;
-  boolean inBounds;
+  boolean inBounds = true;
   //boolean ready;
   float turnMOE = 10;     // margin of error for turning. Given in degrees and converted to radians in constructor
   String command;
@@ -102,7 +102,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     heading = normalizeRadians(heading);
     location.set((float)f.getImageLocation().x, (float)f.getImageLocation().y);
     //rover.location = location;
-    queue.location = location;
+    //queue.location = location;
     PVector hexID = hexgrid.pixelToKey(location);
     if (hexgrid.checkHex(hexID) == false) {
       queue.returnToArena();

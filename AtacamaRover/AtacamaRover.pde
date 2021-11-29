@@ -17,7 +17,7 @@ Governor governor1;
 
 int rover1ID = 6; // the fiducial binary identifier for rover 1
 
-int hexSize = 65;
+int hexSize = 70;
 int camWidth = 1600;
 int camHeight = 1200;  
 int camBufferWidth = 1080;
@@ -92,7 +92,7 @@ void initArena() {
           };
           for (int i = 0; i < 7; i++) {
             rwcorners[i].set(rwcorners[i].x/lambda, rwcorners[i].y/lambda, roverHeight/lambda);
-            //pxCorners[i] = new Point2D_F64(0, 0);
+            pxCorners[i] = new Point2D_F64(0, 0);
             SePointOps_F64.transform(worldToCamera, rwcorners[i], rwcorners[i]);
             PerspectiveOps.convertNormToPixel(intrinsic, rwcorners[i].x/rwcorners[i].z, rwcorners[i].y/rwcorners[i].z, pxCorners[i]);
             ellipse((float)pxCorners[i].x, (float)pxCorners[i].y, 20, 20);

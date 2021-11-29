@@ -66,6 +66,23 @@ class Hexagon {
     }
     buffer.popMatrix();
   }
+  
+    void drawHexOutline(PGraphics buffer, color c, int strokeWeight_) {
+    buffer.pushMatrix();
+    buffer.translate(scaledX, scaledY);
+    buffer.noFill();
+    buffer.strokeWeight(strokeWeight_);
+    buffer.stroke(c);
+    buffer.beginShape();
+    for (int i = 0; i <= 360; i +=60) {
+      float theta = radians(i);
+      float cornerX = camScale * size * cos(theta);
+      float cornerY = camScale * size * sin(theta);
+      buffer.vertex(cornerX, cornerY);
+    }
+    buffer.endShape(CLOSE);
+    buffer.popMatrix();
+  }
 
   void drawHexFill(PGraphics buffer, color c) {
     buffer.pushMatrix();
