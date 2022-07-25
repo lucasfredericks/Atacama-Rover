@@ -39,28 +39,28 @@ uint8_t commandLookup[17] = {
      Therefore, there are sixteen possible values per block reader (2^4), which we can
      refer to by integers 0-15.
 
-     Since we are taking orientation into account for some commands
-     but not others, there will be redundancy (i.e. a FUNC can be rotated to W,E or S,N,
-     but will still resolve to the same command, but a Drive block can be rotated to N, E, S, or W,
-     and each orientation will resolve to a unique directional command).
+     one magnet == forward
+     two adjacent magnets == right
+     two opposite magnets == left
+     three magnets == queue
   */
 
   //char         bin    int   ascii   command
   ' ',      // 0000,  0     32      undefined
-  ' ',      // 0001,  1     32      undefined
-  ' ',      // 0010,  2     32      undefined
-  'e',      // 0011,  3     115     scan
-  ' ',      // 0100,  4     32      undefined
-  'q',      // 0101,  5     113     function
-  'e',      // 0110,  6     115     scan
-  'a',      // 0111,  7     108     left
-  ' ',      // 1000,  8     32     undefined
-  'e',      // 1001,  9     115     scan
-  'q',      // 1010,  10    113     function queue
-  's',      // 1011,  11    98      back
-  'e',      // 1100,  12    115     scan
-  'd',      // 1101,  13    114     right
-  'w',      // 1110,  14    102      forward
+  'q',      // 0001,  1     113     queue
+  'q',      // 0010,  2     113     queue
+  'd',      // 0011,  3     100     right
+  'q',      // 0100,  4     113     queue
+  'a',      // 0101,  5     97      left
+  'd',      // 0110,  6     100     right
+  'w',      // 0111,  7     119     forward
+  'q',      // 1000,  8     113     queue
+  'd',      // 1001,  9     100     right
+  'a',      // 1010,  10    97      left
+  'w',      // 1011,  11    119     forward
+  'd',      // 1100,  12    100     right
+  'w',      // 1101,  13    119     forward
+  'w',      // 1110,  14    119     forward
   ' ',      // 1111,  15    32      undefined
   16,     // 10000, 16    endbyte
 };

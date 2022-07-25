@@ -8,6 +8,7 @@
  */
 class Hexgrid {
   HashMap<PVector, Hexagon> allHexes;
+  AStar pathFinder;
   Governor governor;
   PVector[] neighbors;
   int qMin = -1;   //the q axis corresponds to the x axis on the screen. Higher values are further right
@@ -24,6 +25,7 @@ class Hexgrid {
   Hexgrid(int hexSize_, PGraphics mask, Se3_F64 wtc) {
     worldToCamera = wtc;
     zscale = worldToCamera.getT().z+roverHeight/lambda;
+    pathFinder = new AStar(this);
     neighbors = new PVector[6]; //pre-compute the 3D transformations to return adjacent hexes in 2D grid
     neighbors[0] = new PVector(0, 1, -1); // N
     neighbors[1] = new PVector(1, 0, -1); // NE
