@@ -21,15 +21,18 @@ class Arena { //<>// //<>//
     arenaMask.updatePixels();
     return (arenaMask);
   }
-}
 
-//void drawCorners() {
-//  stroke(255, 0, 0);
-//  strokeWeight(8);
-//  for (int i = 0; i < corners.length; i++) {
-//    ellipse(corners[i].x, corners[i].y, 10,10);
-//  }
-//}
+
+  void drawCorners() {
+    stroke(255, 0, 0);
+    strokeWeight(8);
+    for (int i = 0; i < corners.length; i++) {
+      double cornerX = (camScale*corners[i].x);
+      double cornerY = (camScale*corners[i].y);
+      ellipse((float)cornerX, (float)cornerY, 10, 10);
+    }
+  }
+}
 
 //PGraphics drawMask() {
 //  arenaMask.beginDraw();

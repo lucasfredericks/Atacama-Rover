@@ -20,7 +20,7 @@ int bluePin = 11;
 
 volatile boolean button;
 unsigned long lastButton;
-int debounce = 500; //milli time comparison to debounce button
+int debounce = 400; //milli time comparison to debounce button
 long resendTimer;
 
 boolean debug = false;
@@ -73,13 +73,14 @@ void clearQueue() {
 
 void sendCommand() {
   resendTimer = millis();
-  if (false) {
+  if (debug) {
     for (int i = 0; i < rows; i++) {
       Serial.print(i);
       Serial.print(" = ");
       Serial.println(queue[i]);
     }
     Serial.println("~~~~~~~~~~~~~~~~~~~~~~");
+    delay(250);
   }
   else {
     Serial.write(queue, rows);
@@ -116,6 +117,7 @@ void shiftIn() {
       bitWrite(tempByte, i, tempBool);
       digitalWrite(clockPin, 1);
     }
+    //Serial.println(tempByte);
     uint8_t rightNibble = tempByte & rightCompare;   // bitwise AND with 00001111 to extract the second nibble into its own byte
     uint8_t leftNibble = tempByte >> 4;              // bitshift right to extract the first nibble into its own byte
     queue[j] = commandLookup[leftNibble];
@@ -135,12 +137,12 @@ void buttonPress() {
 }
 
 boolean compareQueues() { //returns true if the current block configuration is the same as the last one
-  for (int i = 0; i < rows; i++) {
-    if (queue[i] != lastQueue[i]) {
-      return false;
-    }
-  }
-  return true;
+//  for (int i = 0; i < rows; i++) {
+//    if (queue[i] != lastQueue[i]) {
+//      return false;
+//    }
+//  }
+  return false;
 }
 
 void setup() {
@@ -197,6 +199,7 @@ void loop() {
   }
 
   if (button) {
+    //Serial.println("button");
     queue[5] = 'n'; //
     sendCommand();
     button = false;

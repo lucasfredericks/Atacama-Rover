@@ -125,7 +125,7 @@ class Queue {
       tempKey = hexgrid.pixelToKey(tempDest);
       i++;
     } while (hexgrid.checkHex(tempKey) == false); //lerp until we find an inbounds hex
-    println("return trajectory found");
+    //println("return trajectory found");
     float targetHeading = (atan2(tempDest.y, tempDest.x)+.5*PI);
     targetHeading = hexgrid.normalizeRadians(targetHeading);
     int cardinalHeading = roundHeading(targetHeading);

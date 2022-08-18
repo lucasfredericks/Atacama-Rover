@@ -43,6 +43,7 @@ class CommandList {
         cmdCount++;
       }
     }
+    //println(byteList);
     return byteList;
   }
 

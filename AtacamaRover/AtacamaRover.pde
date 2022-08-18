@@ -14,6 +14,7 @@ CVThread cvThread;
 
 Hexgrid hexgrid;
 Governor governor1;
+Arena arena;
 
 int rover1ID = 6; // the fiducial binary identifier for rover 1
 
@@ -72,25 +73,27 @@ void initArena() {
     if (cam.available()) {
       cam.read();
     }
+    int numCorners = 7;
     if (cvThread.dataFlag) {
       //println("fiducials found");
       List<FiducialFound> found = cvThread.getFiducials();
       for ( FiducialFound f : found ) {
         if ((int)f.getId()==1234) {
           println("arena found");
-          Arena arena = new Arena();
+          arena = new Arena();
           worldToCamera.set(f.getFiducialToCamera());
-          Point2D_F64 [] pxCorners = new Point2D_F64[7];
+          Point2D_F64 [] pxCorners = new Point2D_F64[numCorners];
           Point3D_F64 [] rwcorners = { //rw coordinates of arena corners in centimeters, with CV marker at (0,0)
-            new Point3D_F64(180, 110, 0), 
-            new Point3D_F64(180, 0, 0), 
-            new Point3D_F64(100, -50, 0), 
-            new Point3D_F64(30, -50, 0), 
-            new Point3D_F64(-30, -10, 0), 
-            new Point3D_F64(-40, 120, 0), 
-            new Point3D_F64(90, 160, 0), 
+            new Point3D_F64(-180, 140, 0), 
+            new Point3D_F64(-10, 140, 0), 
+            new Point3D_F64(140, 110, 0), 
+            new Point3D_F64(160, 30, 0), 
+            new Point3D_F64(90, -90, 0), 
+            new Point3D_F64(-110, -160, 0), 
+            new Point3D_F64(-180, 0, 0), 
+            //new Point3D_F64(90, 160, 0), 
           };
-          for (int i = 0; i < 7; i++) {
+          for (int i = 0; i < numCorners; i++) {
             rwcorners[i].set(rwcorners[i].x/lambda, rwcorners[i].y/lambda, roverHeight/lambda);
             pxCorners[i] = new Point2D_F64(0, 0);
             SePointOps_F64.transform(worldToCamera, rwcorners[i], rwcorners[i]);
@@ -144,4 +147,5 @@ void draw() {
   translate(width - 350, height-20);
   text(stats, 0, 0);
   popMatrix();
+  //arena.drawCorners();
 }
