@@ -16,14 +16,14 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
   String lastCommandStr;
   float cmdMagnitude; //if the rover is moving forward, this is given in mm. If it's turning, it is in radians
   Se3_F64 roverToCamera;
-
-
+  
+  
   int watchdog;
   long handshakeTimer;
-
+  
   //status variables
   boolean handshake;   // tracks acknowldgement from rover
-
+  
   Rover(Hexgrid hexgrid_, PApplet sketch_, String serial) {
     sketch = sketch_;
     hexgrid = hexgrid_;
@@ -34,7 +34,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     handshake = true;
     watchdog = 11; //set watchdog high, so nothing will happen until the rover is located at least once
     String path = sketchPath() + "/data/icons/rover_arrow.png";
-    icon= loadImage(path);
+    icon = loadImage(path);
   }
   void initQueue(Queue queue_) {
     queue = queue_;
@@ -45,19 +45,19 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     handshake = true;
     handshakeTimer = millis();
   }
-
+  
   void run() {
-
+    
     watchdog++;
-
-    while (myPort.available()>0) {
-
+    
+    while(myPort.available()>0) {
+      
       int inByte = myPort.read();
       if (inByte == 'r') {
         if (!handshake) {
           print("handshake");
           handshake = true;
-          handshakeTimer=millis();
+          handshakeTimer = millis();
         }
       }
     }
@@ -66,22 +66,22 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
   //  float distTraveled = abs(PVector.dist(moveStartLocation, location));
   //  float turnDistToTravel = abs(PVector.dist(moveStartLocation, roverDest));
   //  float distCompare =turnDistToTravel - distTraveled; //negative number means it has gone too far
-
+  
   //  return distCompare;
   //}
-
+  
   void setDestHeading(RoverCommand currentCmd) {
-
+    
     destination = currentCmd.getXY();
     //println("destination: " + destination);
     float dy = destination.y - location.y;
     float dx = destination.x - location.x;
-    targetHeading = (atan2(dy, dx)+.5*PI);
+    targetHeading = (atan2(dy, dx) + .5 * PI);
     targetHeading = normalizeRadians(targetHeading);
     //println("set destination heading");
   }
-
-
+  
+  
   void setFinalHeading(RoverCommand currentCmd) {
     if (currentCmd.cmdByte == 'a' || currentCmd.cmdByte == 'd' || currentCmd.cmdByte == 's') { //only reorient 
       targetHeading = currentCmd.getRadianDir();
@@ -91,16 +91,16 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
       println("set final heading");
     }
   }
-
+  
   void updateLocation(FiducialFound f) {
     watchdog = 0;
-    roverToCamera=f.getFiducialToCamera();
+    roverToCamera = f.getFiducialToCamera();
     DMatrixRMaj rMatrix = f.getFiducialToCamera().getR();
     double[] euler;
-    euler = ConvertRotation3D_F64.matrixToEuler(rMatrix, EulerType.XYZ, (double[])null);
+    euler = ConvertRotation3D_F64.matrixToEuler(rMatrix, EulerType.XYZ,(double[])null);
     heading = (float) euler[2]; // - .5*PI;
     heading = normalizeRadians(heading);
-    location.set((float)f.getImageLocation().x, (float)f.getImageLocation().y);
+    location.set((float)f.getImageLocation().x,(float)f.getImageLocation().y);
     //rover.location = location;
     //queue.location = location;
     PVector hexID = hexgrid.pixelToKey(location);
@@ -109,30 +109,32 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     }
     drive();
   }
-
-
+  
+  
   void drive() {
     setCommand();
-    if (handshake && (millis()-handshakeTimer > 500)) {
+    if (handshake && (millis() - handshakeTimer > 500)) {
       sendCommand();
     }
   }
-
-
-
+  
+  
+  
   void setCommand() {
-
+    
     RoverCommand currentCmd = null;
     if (queue.checkQueue()) {             //if there are executable commands in the queue
       currentCmd = queue.getCurrentCmd(); // sets currentcmd to commandlist<0> 
       if (currentCmd.inBounds == false) { //if currentcmd is oob
-        do {                              //advance the queue until one is inbounds or there are no more commands
-          queue.commandComplete(); 
-          currentCmd = null; 
-          if (queue.checkQueue()) {
-            currentCmd = queue.getCurrentCmd(); //set to
-          }
-        } while (currentCmd != null && currentCmd.inBounds == false);
+        queue.endTurn();
+        currentCmd = null;
+        // do {                              //advance the queue until one is inbounds or there are no more commands
+        //   queue.commandComplete(); 
+        //   currentCmd = null; 
+        //   if (queue.checkQueue()) {
+        //     currentCmd = queue.getCurrentCmd(); //set to
+        //   }
+        // } while (currentCmd != null && currentCmd.inBounds == false);
       }
     }
     if (currentCmd == null) {
@@ -148,8 +150,8 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
       //println("location = " + location + ", destination = " + destination + ", distance = " + pxdist);
       //set drive/turn variables
       dist = (float) getDistance(currentCmd);
-
-      if (pxdist >= hexSize/2) { //5 cm
+      
+      if (pxdist >= hexSize / 2) { //5 cm
         queue.checkCt = 0;
         setDestHeading(currentCmd);
       } else {
@@ -161,13 +163,13 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
       float rdelta = targetHeading - heading;
       ldelta = abs(normalizeRadians(ldelta));
       rdelta = abs(normalizeRadians(rdelta));
-
+      
       if (min(ldelta, rdelta)>turnMOE) { 
         turnBool = true;
       } else { 
         turnBool = false;
       }
-
+      
       if (turnBool) {
         if (abs(ldelta)<abs(rdelta)) {
           command = "left";
@@ -186,15 +188,15 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
       }
     }
   }
-
+  
   double getDistance(RoverCommand currentCmd) {
-
+    
     double dist = currentCmd.getDist(roverToCamera);
     return dist;
   }
-
+  
   float normalizeRadians(float theta) {
-    while (theta < 0 || theta > TWO_PI) {
+    while(theta < 0 || theta > TWO_PI) {
       if (theta < 0) {
         theta += TWO_PI;
       }
@@ -204,10 +206,10 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     }
     return theta;
   }
-
+  
   void sendCommand() {
     byte commandByte = ' ';     //invalid command will default to 'stop'
-
+    
     if (command == "stop") {
       commandByte = ' ';
     } else if (command == "left") {
@@ -217,25 +219,25 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     } else if (command == "forward") {
       commandByte = 'w';
     }
-
+    
     String cmdString = commandByte + "," + cmdMagnitude;
-    if(commandByte != ' '){
+    if (commandByte != ' ') {
       myPort.write(cmdString + '\n');
-    println("command: " + cmdString);
-    //  lastCommandStr = cmdString;
-    handshake = false;
+      println("command: " + cmdString);
+      //lastCommandStr = cmdString;
+      handshake = false;
     }
   }
-
+  
   void sendCommand(byte commandByte) {
-
+    
     if (commandByte == 'a' || commandByte == 'd' || commandByte == 'w' || commandByte == ' ') {
       String cmdString = commandByte + "," + cmdMagnitude;
       //if (!cmdString.equals(lastCommandStr)) {
-        myPort.write(cmdString + '\n');
-        lastCommandStr = cmdString;
-        println("command (byte): " + cmdString);
-        handshake = false;
+      myPort.write(cmdString + '\n');
+      lastCommandStr = cmdString;
+      println("command (byte): " + cmdString);
+      handshake = false;
       //}
     }
   }
@@ -246,7 +248,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     cmdMagnitude = 0;
     sendCommand();
   }
-
+  
   void displayHeading(PGraphics buffer) {
     buffer.beginDraw();
     buffer.pushMatrix();

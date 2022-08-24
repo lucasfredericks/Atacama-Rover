@@ -83,6 +83,7 @@ class CommandList {
     return commands;
   }
 
+
   void createList(byte[] mainQueue, byte[] funcQueue, PVector hexKey, int cardinalHeading, boolean execute) {
     ArrayList<BytePlus> byteList = parseRawCmds(mainQueue, funcQueue);
     commands.clear();
@@ -99,14 +100,14 @@ class CommandList {
       } else if (bp.cmd == 100) { // 'd' right/clockwise
         drive = false;
         cardinalHeading += 1;
-      } else if (bp.cmd==101) { // 'e' scan for life
+      } else if (bp.cmd ==  101) { // 'e' scan for life
         drive = false;
       }
       while (cardinalHeading < 0 || cardinalHeading >= 6) {
         if (cardinalHeading < 0) {
           cardinalHeading += 6;
         }
-        if (cardinalHeading >=6) {
+        if (cardinalHeading >=  6) {
           cardinalHeading -= 6;
         }
       }
@@ -117,11 +118,26 @@ class CommandList {
       RoverCommand rc = new RoverCommand(hexgrid, hexKey, cardinalHeading, bp.cmd, bp.function, execute);
       commands.add(rc);
     }
+    // if (execute) {
+    //   scanAtEndOfList();
+    // }
   }
 
+  // void scanAtEndOfList() {
+  //   int listSize = commandList.size();
+  //   if (listSize > 0) {
+  //     RoverCommand rc = commandList.get(listSize - 1);
+  //     if (queue.isTargetHex(rc.hexKey) && execute)
+  //       RoverCommand temp = rc.copy();
+  //       temp.drive = false;
+  //       temp.scan = true;
+  //     commands.add(temp); 
+  //   }
+  //   return;
+  // }
   void customCommand(PVector hexKey, int cardinalHeading) {
     commands.clear();
-    byte cmd = 119;
+    byte cmd  = 119;
     RoverCommand customCommand = new RoverCommand(hexgrid, hexKey, cardinalHeading, cmd, false, true);
     commands.add(customCommand);
   }
@@ -175,15 +191,15 @@ class CommandList {
 
   boolean isValid(byte tempByte, boolean function) {
 
-    if (tempByte == 119) {    // 'w' forward
+    if (tempByte == 119) {    //'w' forward
       return true;
     } else if (tempByte ==  97) { // 'a' counterclockwise
       return true;
-    } else if (tempByte == 115) { // 's' back
+    } else if (tempByte == 115) { //'s' back
       return true;
-    } else if (tempByte == 100) { // 'd' right/clockwise
+    } else if (tempByte == 100) { //'d' right/clockwise
       return true;
-    } else if (tempByte == 101) { // 'e' scan for life
+    } else if (tempByte == 101) { // 'e'scan for life
       return true;
     } else if (tempByte == 32) { // ' ' for stop
       //rover.stop();
@@ -202,6 +218,7 @@ class CommandList {
     }
   }
 }
+
 class BytePlus { 
   byte cmd;
   boolean function;

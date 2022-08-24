@@ -1,33 +1,34 @@
-import processing.serial.*; //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
+import processing.serial.*; 
 import java.util.Iterator;
 import boofcv.processing.*;
 PGraphics GUI;
 
 class Queue {
-
+  
   PApplet sketch;
   CardList cardList;
   Rover rover;
   Serial myPort;
   Hexgrid hexgrid;
   Hexagon scanDest;
+  AStar pathFinder;
   boolean newCommands;
   float commandTotalDistance = 0;
   int checkCt = 0;
   //PVector location;
-
+  
   //PVector moveStartLocation;
-
+  
   //ArrayList<Byte> byteList;
   CommandList commandList;
-
+  
   //queue = new Queue(sketch, cardList, hexgrid, queuePortName, queueGUI);
-
+  
   Queue(PApplet sketch_, CardList cardList_, Hexgrid hexgrid_, String serial, PGraphics GUI_, CommandList commandList_) {
     println("queue init start");
     cardList = cardList_;
     hexgrid = hexgrid_;
-    //    byteList = new ArrayList<Byte>();
+    pathFinder = new AStar(hexgrid);
     newCommands = false;
     sketch = sketch_;
     GUI = GUI_;
@@ -41,15 +42,28 @@ class Queue {
     commandList = commandList_;    
     println("queue init complete");
   }
-
+  
+  boolean isTargetHex(Hexagon h_) {
+    if (h_.getKey() == scanDest.getKey()) {
+      return true;
+    }
+    return false;
+  }
+  boolean isTargetHex(PVector key_) {
+    if (key_ == scanDest.getKey()) {
+      return true;
+    }
+    return false;
+  }
+  
   void initRover(Rover rover_) {
     rover = rover_;
   }
-
+  
   void update() {
-
-    if ( myPort.available() > 0) { // If data is available,
-
+    
+    if (myPort.available() > 0) { // If data is available,
+      
       byte[] inBuffer = new byte[12];
       byte interesting = 16; //endByte
       inBuffer = myPort.readBytesUntil(interesting);
@@ -63,10 +77,17 @@ class Queue {
       boolean execute;
       for (int i = 0; i < 5; i++) {
         mainQueue[i] = inBuffer[i];
-        funcQueue[i] = inBuffer[i+6];
+        funcQueue[i] = inBuffer[i + 6];
       }
       //println("parsing queue into byte list");
       if (inBuffer[5] == 'n') {//if the user has pressed the button
+        if (cardList.showCard) { //if the kiosk is displaying a photo, close the photo and clear the queue
+          cardList.stopDisplayingCard();
+          execute = false;
+          commandList.clearList();
+          setButtonColor();
+          return;
+        }
         println("executable command received");
         newCommands = true;
         if (commandList.isExecutableCommand()) { //if the rover is already moving
@@ -90,11 +111,11 @@ class Queue {
       PVector hexKey = hexgrid.pixelToKey(rover.location);
       commandList.createList(mainQueue, funcQueue, hexKey, cardinalHeading, execute);
     }
-
+    
     setButtonColor();
     updateGUI();
   }
-
+  
   void setButtonColor() {
     if (commandList.isExecutableCommand()) {
       myPort.write('r'); //button red
@@ -102,52 +123,49 @@ class Queue {
       myPort.write('g'); //button green
     }
   }
-
+  
   void scan() {
     Hexagon h = hexgrid.pixelToHex(rover.location);
     if (cardList.scan(h, scanDest)) {
+      cardList.lifeFound();
       pickScanDest();
     }
   }
-
+  
   void returnToArena() {
     commandList.clearList();
-    PVector middle = new PVector(camWidth/2, camHeight/2);
+    PVector middle = new PVector(camWidth / 2, camHeight / 2);
     PVector tempDest = new PVector();
     PVector tempKey = new PVector();
     int i = 1;
     float dy;
     float dx;
     do {
-      dy = lerp(rover.location.y, middle.y, i* .05); //linear interpolation towards center of arena //<>//
-      dx = lerp(rover.location.x, middle.x, i* .05);
+      dy = lerp(rover.location.y, middle.y, i * .05); //linear interpolation towards center of arena //<>//
+      dx = lerp(rover.location.x, middle.x, i * .05);
       tempDest.set(dx, dy);
       tempKey = hexgrid.pixelToKey(tempDest);
       i++;
-    } while (hexgrid.checkHex(tempKey) == false); //lerp until we find an inbounds hex
+    } while(hexgrid.allHexes.containsKey(tempKey) == false); //lerp until we find an inbounds hex
     //println("return trajectory found");
-    float targetHeading = (atan2(tempDest.y, tempDest.x)+.5*PI);
+    float targetHeading = (atan2(tempDest.y, tempDest.x) +.5 * PI);
     targetHeading = hexgrid.normalizeRadians(targetHeading);
     int cardinalHeading = roundHeading(targetHeading);
     commandList.customCommand(tempKey, cardinalHeading);
+    pickScanDest();
   }
-
-
+  
+  
   void pickScanDest() {
-    Hexagon h;
-    Object[] keys = hexgrid.allHexes.keySet().toArray();
-    do {
-      Object randHexKey = keys[new Random().nextInt(keys.length)];
-      h = hexgrid.getHex((PVector)randHexKey);
-    } while (h == scanDest);
-    scanDest = h;
-    println("pick scan dest complete");
+    Hexagon roverHex = hexgrid.pixelToHex(rover.location);
+      scanDest = pathFinder.createMap(roverHex);
+      println("pick scan dest complete");
   }
   int roundHeading(float heading_) {
     int cHeading = 0;
-    if (degrees(heading_) > 330 || degrees(heading_) <= 30 ) { //refactor this into radians probably
+    if (degrees(heading_) > 330 || degrees(heading_) <= 30) { //refactor this into radians probably
       cHeading = 0;
-    } else if (degrees(heading_) >  30 && degrees(heading_) <= 90 ) {
+    } else if (degrees(heading_) >  30 && degrees(heading_) <= 90) {
       cHeading = 1;
     } else if (degrees(heading_) >  90 && degrees(heading_) <= 150) {
       cHeading = 2;
@@ -158,15 +176,15 @@ class Queue {
     } else if (degrees(heading_) > 270 && degrees(heading_) <= 330) {
       cHeading = 5;
     }
-    return (int) cHeading;
+    return(int) cHeading;
   }
-
+  
   void updateGUI() {
     GUI.beginDraw();
     //GUI.background(0, 255, 255);
     GUI.clear();
     GUI.pushMatrix();
-    GUI.translate(0, GUI.height/2);
+    GUI.translate(0, GUI.height / 2);
     GUI.imageMode(CENTER);
     GUI.rectMode(CENTER);
     GUI.fill(#0098be);
@@ -186,17 +204,17 @@ class Queue {
     GUI.popMatrix();
     GUI.endDraw();
   }
-
+  
   void drawHexes(PGraphics buffer) {
     buffer.beginDraw();
     commandList.drawHexes(buffer);
     scanDest.blinkHex(buffer);
     buffer.endDraw();
   }
-
+  
   float cardDirToRadians(int cardD) {
     float[] cardHtoTheta = {0, 60, 120, 180, 240, 300};
-    while (cardD < 0 || cardD >= 6) {
+    while(cardD < 0 || cardD >= 6) {
       if (cardD < 0) {
         cardD += 6;
       }
@@ -206,12 +224,12 @@ class Queue {
     }
     return cardHtoTheta[cardD];
   }
-
+  
   RoverCommand getCurrentCmd() {
     return commandList.getCurrentCmd();
   }
-
-
+  
+  
   boolean checkQueue() {
     if (commandList.isEmpty() || commandList.isExecutableCommand() == false) {
       return false;
@@ -219,7 +237,7 @@ class Queue {
       return true;
     }
   }
-
+  
   boolean checkInBounds() {
     if (commandList.isEmpty() || commandList.isInBounds() == false) {
       return false;
@@ -227,7 +245,7 @@ class Queue {
       return true;
     }
   }
-
+  
   boolean checkNew() {
     if (newCommands) {
       newCommands = false;
@@ -236,12 +254,19 @@ class Queue {
       return false;
     }
   }
-
-
+  
+  
   void commandComplete() {
     checkCt = 0;
     //println("command complete");
     commandList.commandComplete(); //deletes current cmd
+    if(checkQueue()==false){
+      scan();
+    }
   }
-
+  
+  void endTurn() {
+    commandList.clearList();
+  }
+  
 }

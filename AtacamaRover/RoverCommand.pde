@@ -19,7 +19,7 @@ class RoverCommand extends Hexagon {
     execute = execute_;
     reorient = !drive;
     function = function_;
-    inBounds = hexgrid.checkHex(hexKey_);
+    inBounds = (hexgrid.checkHex(hexKey_));
     while (cardinalDir_ < 0 || cardinalDir_ >= 6) {
       if (cardinalDir_ < 0) {
         cardinalDir_ += 6;
