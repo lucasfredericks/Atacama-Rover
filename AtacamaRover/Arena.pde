@@ -27,8 +27,8 @@ class Arena { //<>// //<>//
     stroke(255, 0, 0);
     strokeWeight(8);
     for (int i = 0; i < corners.length; i++) {
-      double cornerX = (camScale*corners[i].x);
-      double cornerY = (camScale*corners[i].y);
+      double cornerX = map((float)corners[i].x, 0, camWidth, 0, camBufferWidth);
+      double cornerY = map((float)corners[i].y, 0, camHeight, 0, camBufferHeight);
       ellipse((float)cornerX, (float)cornerY, 10, 10);
     }
   }

@@ -48,34 +48,33 @@ class CommandList {
   }
 
   void drawHexes(PGraphics buffer) {
-    color c_ = #aae4df; 
+    //color c_ = #aae4df; 
+    color c_ = 255;
     color d_ = #ff0000;
-    color fnColor = #0098be;
+    color fnColor = #cfdb4b;
+    color strokeColor;
+    color fillColor;
+    int weight;
     for (RoverCommand rc : commands) {
-      if (rc.function) {
-        rc.drawHexOutline(buffer, fnColor, 4);
+      if(rc.execute){
+        weight = 4;
+      }else{
+        weight = 2;
       }
-      if (rc.execute) {
-        if (rc.inBounds) {
-          if (rc.function) {
-            rc.drawHexFill(buffer, fnColor, 150);
-          } else {
-            rc.drawHexFill(buffer, c_, 150);
-          }
+      if (rc.inBounds) {
+        if (rc.function) {
+          strokeColor = fnColor;
+          fillColor = fnColor;
         } else {
-          rc.drawHexFill(buffer, d_, 150);
+          strokeColor = c_;
+          fillColor = c_;
         }
       } else {
-        if (rc.inBounds) {
-          if (rc.function) {
-            rc.drawHexFill(buffer, fnColor, 75);
-          } else {
-            rc.drawHexFill(buffer, c_, 75);
-          }
-        } else {
-          rc.drawHexFill(buffer, d_, 150);
-        }
+        strokeColor = d_;
+        fillColor = d_;
       }
+      rc.drawHexOutline(buffer, strokeColor, weight);
+      rc.drawHexFill(buffer, fillColor, 100);
     }
   }
 

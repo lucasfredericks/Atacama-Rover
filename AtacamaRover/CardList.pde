@@ -3,8 +3,11 @@ class CardList {
 
   PImage[] percyPhotos;
   PImage currentCard;
+  PImage hazardCard;
+  Queue queue;
 
-  int cardWidth, cardHeight;
+  int cardWidth = 1920;
+  int cardHeight = 1080;
   PGraphics cardBuffer;
   LoadingBar loadingBar;
 
@@ -15,13 +18,12 @@ class CardList {
   long dispTimer;
   long dispTimeout = 120000;
 
-  CardList(int cardWidth_, int cardHeight_) {
-    cardWidth = cardWidth_;
-    cardHeight = cardHeight_;
+  CardList(Queue queue_) {
+    queue = queue_;
     cardBuffer = createGraphics(cardWidth, cardHeight);
 
     dispTimer = millis();
-    String path = sketchPath() + "/data/cardImages/Percy";
+    String path = sketchPath() + "/data/cardImages/Percy/";
     String[] files = listFileNames(path);
     percyPhotos = new PImage[files.length];
     println("loading images");
@@ -29,9 +31,11 @@ class CardList {
       percyPhotos[i] = loadImage(path + files[i]);
       percyPhotos[i].resize(cardWidth, 0);
     }
+    path = sketchPath() + "/data/cardImages/hazard.jpg";
+    hazardCard = loadImage(path);
     println("done");
     currentCard = percyPhotos[0];
-    loadingBar = new LoadingBar(400, 40);
+    //loadingBar = new LoadingBar(400, 40);
   }
 
   void run() {
@@ -45,20 +49,19 @@ class CardList {
     cardBuffer.rectMode(CENTER); 
     cardBuffer.clear();
     cardBuffer.noStroke();
-    //cardBuffer.fill(#000000);
     cardBuffer.pushMatrix();
     cardBuffer.translate(cardWidth / 2, cardHeight / 2);
-    //cardBuffer.rect(0, 0, cardWidth, cardHeight, 10);
-
-    if (millis() - scanTimer < 1000) { //1 second timer
-      loadingBar.display(0, 0, cardBuffer);
-    } else {
-      cardBuffer.imageMode(CENTER);
-      cardBuffer.image(currentCard, 0, 0, cardWidth, cardHeight);
-    }
-    cardBuffer.popMatrix();
+    cardBuffer.imageMode(CENTER);
+    cardBuffer.image(currentCard, 0, 0, cardWidth, cardHeight);
+   cardBuffer.popMatrix();
     cardBuffer.endDraw();
     return cardBuffer;
+  }
+
+  void hazard() {
+    currentCard = hazardCard;
+    dispTimer = millis();
+    showCard = true;
   }
 
   boolean scan(Hexagon location, Hexagon target) {
@@ -79,13 +82,17 @@ class CardList {
 
   void lifeFound() {
     dispTimer = millis();
+    currentCard = percyPhotos[index];
     showCard = true;
   }
 
   void stopDisplayingCard() {
-    showCard = false;
-    index = (index + 1) % percyPhotos.length;
-    currentCard = percyPhotos[index];
+    if (showCard) {
+      showCard = false;
+      index = (index + 1) % percyPhotos.length;
+      currentCard = percyPhotos[index];
+      queue.pickScanDest();
+    }
   }
 
   String[] listFileNames(String dir) {

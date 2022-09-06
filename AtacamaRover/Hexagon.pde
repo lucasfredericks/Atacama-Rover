@@ -11,14 +11,14 @@ class Hexagon {
   boolean blink = false;
   Point2D_F64 normCoords;
   PImage impassableIcon;
-  
+
   float scale; //multiplier to convert from the size of the camera to the display size
 
 
   //pathfinding variables
   float f = 0;
-  float g = 0;
-  float heuristic = 0;
+  float g = 0; //cost of path from start to this hex
+  float heuristic = 0; //estimated cost of path from this hex to target
   List<Hexagon> neighbors = new ArrayList<Hexagon>();
   Hexagon previous = null;
   boolean passable = true;
@@ -47,20 +47,20 @@ class Hexagon {
     id = new PVector(hexX, hexY, hexZ);
   }
 
-  void assignIcon(PImage icon_){
+  void assignIcon(PImage icon_) {
     impassableIcon = icon_;
   }
 
   PVector getKey() {
     return(id);
   }
-  
-  void resetPathfindingVars(){
-   f = 0;
-   g = 0;
-   heuristic = 0;
-   addNeighbors();
-   previous = null;
+
+  void resetPathfindingVars() {
+    f = 0;
+    g = 0;
+    heuristic = 0;
+    addNeighbors();
+    previous = null;
   }
 
   void addNeighbors() {
@@ -74,21 +74,21 @@ class Hexagon {
     }
   }
 
-  void drawHexOutline(PGraphics buffer) {
+  void drawHexOutline(PGraphics buffer, int strokeWt) {
     buffer.pushMatrix();
-    buffer.translate(pixelX, pixelY);
+    buffer.translate(scaledX, scaledY);
     buffer.noFill();
-    buffer.strokeWeight(4);
-    buffer.stroke(0, 0, 255);
+    buffer.strokeWeight(strokeWt);
+    buffer.stroke(#a9e3df);
     buffer.beginShape();
     for (int i = 0; i <= 360; i +=60) {
       float theta = radians(i);
-      float cornerX = size * cos(theta);
-      float cornerY = size * sin(theta);
+      float cornerX = camScale * size * cos(theta);
+      float cornerY = camScale * size * sin(theta);
       buffer.vertex(cornerX, cornerY);
     }
     buffer.endShape(CLOSE);
-    
+
     if (false) { //debug
       buffer.strokeWeight(2);
       buffer.stroke(0);
@@ -101,17 +101,42 @@ class Hexagon {
     buffer.popMatrix();
   }
 
-  void drawHexOutline(PGraphics buffer, color c, int strokeWeight_) {
+  void display(PGraphics buffer) {
     buffer.pushMatrix();
-    buffer.translate(pixelX, pixelY);
-    buffer.noFill();
-    buffer.strokeWeight(strokeWeight_);
-    buffer.stroke(c);
+    buffer.translate(scaledX, scaledY);
+    buffer.strokeWeight(3);
+    buffer.stroke(155);
+    if (!passable) {
+      buffer.fill(155,150);
+    } else {
+      buffer.noFill();
+    }
     buffer.beginShape();
     for (int i = 0; i <= 360; i +=60) {
       float theta = radians(i);
-      float cornerX = size * cos(theta);
-      float cornerY = size * sin(theta);
+      float cornerX = camScale * size * cos(theta);
+      float cornerY = camScale * size * sin(theta);
+      buffer.vertex(cornerX, cornerY);
+    }
+    buffer.endShape(CLOSE);
+    if (!passable) {
+      buffer.imageMode(CENTER);
+      buffer.image(impassableIcon, 0, 0);
+    }
+    buffer.popMatrix();
+  }
+
+  void drawHexOutline(PGraphics buffer, color c, int strokeWeight_) {
+    buffer.pushMatrix();
+    buffer.strokeWeight(strokeWeight_);
+    buffer.stroke(c);
+    buffer.translate(scaledX, scaledY);
+    buffer.noFill();
+    buffer.beginShape();
+    for (int i = 0; i <= 360; i +=60) {
+      float theta = radians(i);
+      float cornerX = camScale * size * cos(theta);
+      float cornerY = camScale * size * sin(theta);
       buffer.vertex(cornerX, cornerY);
     }
     buffer.endShape(CLOSE);
@@ -120,14 +145,14 @@ class Hexagon {
 
   void drawHexFill(PGraphics buffer, color c) {
     buffer.pushMatrix();
-    buffer.translate(pixelX, pixelY);
+    buffer.translate(scaledX, scaledY);
     buffer.fill(c);
     buffer.noStroke();
     buffer.beginShape();
     for (int i = 0; i <= 360; i +=60) {
       float theta = radians(i);
-      float cornerX = size * cos(theta);
-      float cornerY = size * sin(theta);
+      float cornerX = camScale *  size * cos(theta);
+      float cornerY = camScale *  size * sin(theta);
       buffer.vertex(cornerX, cornerY);
     }
     buffer.endShape();
@@ -136,29 +161,29 @@ class Hexagon {
 
   void drawHexFill(PGraphics buffer, color c, int alpha) {
     buffer.pushMatrix();
-    buffer.translate(pixelX, pixelY);
+    buffer.translate(scaledX, scaledY);
     buffer.fill(c, alpha);
     buffer.noStroke();
     buffer.beginShape();
     for (int i = 0; i <= 360; i +=60) {
       float theta = radians(i);
-      float cornerX = size * cos(theta);
-      float cornerY = size * sin(theta);
+      float cornerX = camScale *  size * cos(theta);
+      float cornerY = camScale * size * sin(theta);
       buffer.vertex(cornerX, cornerY);
     }
     buffer.endShape();
     buffer.popMatrix();
   }
 
-  void drawIcon(PGraphics buffer){
+  void drawIcon(PGraphics buffer) {
     buffer.pushMatrix();
-    buffer.translate(pixelX, pixelY);
-    buffer.push();
+    buffer.translate(scaledY, scaledY);  
+    //buffer.push();
     buffer.noStroke();
     buffer.noFill();
     buffer.imageMode(CENTER);
     buffer.image(impassableIcon, 0, 0);
-    buffer.pop();
+    //buffer.pop();
     buffer.popMatrix();
   }
 
@@ -173,14 +198,14 @@ class Hexagon {
   void blinkHex(PGraphics buffer) {
     buffer.beginDraw();
     buffer.pushMatrix();
-    buffer.translate(pixelX, pixelY);
-    buffer.fill(255, blinkAlpha);
+    buffer.translate(scaledX, scaledY);
+    buffer.fill(#aae4df, blinkAlpha);
     buffer.noStroke();
     buffer.beginShape();
     for (int i = 0; i <= 360; i +=60) {
       float theta = radians(i);
-      float cornerX = size * cos(theta);
-      float cornerY = size * sin(theta);
+      float cornerX = camScale * size * cos(theta);
+      float cornerY = camScale * size * sin(theta);
       buffer.vertex(cornerX, cornerY);
     }
     buffer.endShape();

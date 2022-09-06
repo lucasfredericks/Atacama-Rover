@@ -1,10 +1,10 @@
-import processing.serial.*; 
+import processing.serial.*;  //<>//
 import java.util.Iterator;
 import boofcv.processing.*;
 PGraphics GUI;
 
 class Queue {
-  
+
   PApplet sketch;
   CardList cardList;
   Rover rover;
@@ -16,33 +16,29 @@ class Queue {
   float commandTotalDistance = 0;
   int checkCt = 0;
   //PVector location;
-  
+
   //PVector moveStartLocation;
-  
+
   //ArrayList<Byte> byteList;
   CommandList commandList;
-  
+
   //queue = new Queue(sketch, cardList, hexgrid, queuePortName, queueGUI);
-  
-  Queue(PApplet sketch_, CardList cardList_, Hexgrid hexgrid_, String serial, PGraphics GUI_, CommandList commandList_) {
+
+  Queue(PApplet sketch_, Hexgrid hexgrid_, String serial, PGraphics GUI_, CommandList commandList_) {
     println("queue init start");
-    cardList = cardList_;
     hexgrid = hexgrid_;
-    pathFinder = new AStar(hexgrid);
+    cardList = new CardList(this);
     newCommands = false;
     sketch = sketch_;
     GUI = GUI_;
     myPort = new Serial(sketch, serial, 115200);
     println("queue Serial init");
     //moveStartLocation = new PVector();
-    Object[] keys = hexgrid.allHexes.keySet().toArray();
-    Object randHexKey = keys[new Random().nextInt(keys.length)];
-    scanDest = hexgrid.getHex((PVector)randHexKey);
     //location = new PVector(camWidth/2, camHeight/2);
     commandList = commandList_;    
     println("queue init complete");
   }
-  
+
   boolean isTargetHex(Hexagon h_) {
     if (h_.getKey() == scanDest.getKey()) {
       return true;
@@ -55,15 +51,17 @@ class Queue {
     }
     return false;
   }
-  
+
   void initRover(Rover rover_) {
     rover = rover_;
   }
-  
+
   void update() {
-    
+
+    cardList.run();
+
     if (myPort.available() > 0) { // If data is available,
-      
+
       byte[] inBuffer = new byte[12];
       byte interesting = 16; //endByte
       inBuffer = myPort.readBytesUntil(interesting);
@@ -81,6 +79,7 @@ class Queue {
       }
       //println("parsing queue into byte list");
       if (inBuffer[5] == 'n') {//if the user has pressed the button
+        println("button pressed");
         if (cardList.showCard) { //if the kiosk is displaying a photo, close the photo and clear the queue
           cardList.stopDisplayingCard();
           execute = false;
@@ -88,11 +87,12 @@ class Queue {
           setButtonColor();
           return;
         }
-        println("executable command received");
         newCommands = true;
         if (commandList.isExecutableCommand()) { //if the rover is already moving
           execute = false; //the first button press will cancel current execution.
           commandList.clearList();
+          scan();
+          return;
         } else {
           execute = true;
           commandList.clearList();
@@ -111,11 +111,11 @@ class Queue {
       PVector hexKey = hexgrid.pixelToKey(rover.location);
       commandList.createList(mainQueue, funcQueue, hexKey, cardinalHeading, execute);
     }
-    
+
     setButtonColor();
     updateGUI();
   }
-  
+
   void setButtonColor() {
     if (commandList.isExecutableCommand()) {
       myPort.write('r'); //button red
@@ -123,15 +123,14 @@ class Queue {
       myPort.write('g'); //button green
     }
   }
-  
+
   void scan() {
     Hexagon h = hexgrid.pixelToHex(rover.location);
     if (cardList.scan(h, scanDest)) {
       cardList.lifeFound();
-      pickScanDest();
     }
   }
-  
+
   void returnToArena() {
     commandList.clearList();
     PVector middle = new PVector(camWidth / 2, camHeight / 2);
@@ -141,26 +140,35 @@ class Queue {
     float dy;
     float dx;
     do {
-      dy = lerp(rover.location.y, middle.y, i * .05); //linear interpolation towards center of arena //<>//
+      dy = lerp(rover.location.y, middle.y, i * .05); //linear interpolation towards center of arena
       dx = lerp(rover.location.x, middle.x, i * .05);
       tempDest.set(dx, dy);
       tempKey = hexgrid.pixelToKey(tempDest);
       i++;
-    } while(hexgrid.allHexes.containsKey(tempKey) == false); //lerp until we find an inbounds hex
+    } while (hexgrid.allHexes.containsKey(tempKey) == false); //lerp until we find an inbounds hex
     //println("return trajectory found");
     float targetHeading = (atan2(tempDest.y, tempDest.x) +.5 * PI);
     targetHeading = hexgrid.normalizeRadians(targetHeading);
     int cardinalHeading = roundHeading(targetHeading);
     commandList.customCommand(tempKey, cardinalHeading);
-    pickScanDest();
+    pickScanDest(tempKey);
   }
-  
-  
+
+
   void pickScanDest() {
-    Hexagon roverHex = hexgrid.pixelToHex(rover.location);
-      scanDest = pathFinder.createMap(roverHex);
-      println("pick scan dest complete");
+    println("picking scan destination");
+
+    scanDest = hexgrid.pickTarget(hexgrid.pixelToHex(rover.location));
+    println("pick scan dest complete");
   }
+
+  void pickScanDest(PVector tempKey) {
+    if (hexgrid.inBounds(rover.location)) {
+      scanDest = hexgrid.pickTarget(hexgrid.getHex(tempKey));
+    }
+  }
+
+
   int roundHeading(float heading_) {
     int cHeading = 0;
     if (degrees(heading_) > 330 || degrees(heading_) <= 30) { //refactor this into radians probably
@@ -178,43 +186,54 @@ class Queue {
     }
     return(int) cHeading;
   }
-  
+
   void updateGUI() {
+
+    int tileSize = 140;
+    int margin = 20;
+    int radius = 10;
+    color fnCol = #cfdb4b;
     GUI.beginDraw();
     //GUI.background(0, 255, 255);
     GUI.clear();
     GUI.pushMatrix();
-    GUI.translate(0, GUI.height / 2);
+    GUI.translate(margin+tileSize/2, GUI.height / 2);
     GUI.imageMode(CENTER);
     GUI.rectMode(CENTER);
-    GUI.fill(#0098be);
+    GUI.fill(255);
+    GUI.strokeWeight(10);
+
     ArrayList<RoverCommand> commands = commandList.getRCList();
     for (RoverCommand rc : commands) {
-      GUI.translate(100, 0);
       GUI.pushMatrix();
       PImage icon = rc.getIcon();
       if (rc.function) {
-        GUI.noStroke();
-        GUI.rect(0, 0, 102, 102);
+        GUI.stroke(fnCol);
+      } else {
+        GUI.stroke(255);
       }
+      GUI.rect(0, 0, tileSize, tileSize, radius);
       //GUI.rotate(rc.radianDir);
-      GUI.image(icon, 0, 0, 80, 80);
+      GUI.image(icon, 0, 0, tileSize-margin, tileSize-margin);
       GUI.popMatrix();
+      GUI.translate(margin + tileSize, 0);
     }
     GUI.popMatrix();
     GUI.endDraw();
   }
-  
+
   void drawHexes(PGraphics buffer) {
     buffer.beginDraw();
     commandList.drawHexes(buffer);
-    scanDest.blinkHex(buffer);
+    if (scanDest != null) {
+      scanDest.blinkHex(buffer);
+    }
     buffer.endDraw();
   }
-  
+
   float cardDirToRadians(int cardD) {
     float[] cardHtoTheta = {0, 60, 120, 180, 240, 300};
-    while(cardD < 0 || cardD >= 6) {
+    while (cardD < 0 || cardD >= 6) {
       if (cardD < 0) {
         cardD += 6;
       }
@@ -224,12 +243,23 @@ class Queue {
     }
     return cardHtoTheta[cardD];
   }
-  
+
   RoverCommand getCurrentCmd() {
     return commandList.getCurrentCmd();
   }
-  
-  
+
+  boolean cardBool() {
+    if (cardList.showCard) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  PImage displayCard() {
+    return cardList.displayCard();
+  }
+
   boolean checkQueue() {
     if (commandList.isEmpty() || commandList.isExecutableCommand() == false) {
       return false;
@@ -237,15 +267,15 @@ class Queue {
       return true;
     }
   }
-  
+
   boolean checkInBounds() {
-    if (commandList.isEmpty() || commandList.isInBounds() == false) {
+    if (commandList.isInBounds() == false) {
       return false;
     } else {
       return true;
     }
   }
-  
+
   boolean checkNew() {
     if (newCommands) {
       newCommands = false;
@@ -254,19 +284,25 @@ class Queue {
       return false;
     }
   }
-  
-  
+
+
   void commandComplete() {
     checkCt = 0;
     //println("command complete");
     commandList.commandComplete(); //deletes current cmd
-    if(checkQueue()==false){
+    //if(commandList.isEmpty()){
+
+    //}
+    if (checkQueue()==false) {
       scan();
     }
   }
-  
-  void endTurn() {
+
+  void endTurn(boolean inBounds) {
     commandList.clearList();
+    if (inBounds == false) {
+      cardList.hazard();
+      scan();
+    }
   }
-  
 }

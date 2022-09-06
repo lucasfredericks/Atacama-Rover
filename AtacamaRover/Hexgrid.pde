@@ -1,4 +1,4 @@
-/* //<>// //<>// //<>//
+/* //<>// //<>//
  Hex grid calculations are based on the excellent interactive Hexagonal Grids guide
  from Amit Patel at Red Blob Games (https://www.redblobgames.com/grids/hexagons)
  
@@ -7,6 +7,7 @@
  https://www.redblobgames.com/grids/hexagons/implementation.html
  */
 class Hexgrid {
+  AStar pathFinder;
   HashMap<PVector, Hexagon> allHexes;
   PVector[] neighbors;
 
@@ -19,6 +20,7 @@ class Hexgrid {
   Hexagon r1Hex;
   Se3_F64 worldToCamera;
   double zscale;
+  boolean redraw = true;
 
 
 
@@ -43,7 +45,7 @@ class Hexgrid {
     PImage[] impassable = new PImage[files.length];
     for (int i = 0; i < files.length; i++) {
       impassable[i] = loadImage(path+files[i]);
-      impassable[i].resize(hexSize, 0);
+      impassable[i].resize(hexSize +20, 0);
     }
     for (int q = qMin; q <= qMax; q++) {
       for (int r = rMin; r <= rMax; r++) {
@@ -60,21 +62,37 @@ class Hexgrid {
         }
       }
     }
+    pathFinder = new AStar(this);
   }
 
   void drawOutlines(PGraphics buffer) {
     buffer.beginDraw();
     buffer.clear();
     buffer.noFill();
-    buffer.strokeWeight(10);
+    //buffer.strokeWeight(10);
     buffer.stroke(0, 0, 255);
     //println(allHexes.entrySet());
     for (Map.Entry < PVector, Hexagon > me : allHexes.entrySet()) {
       Hexagon h = me.getValue();
-      h.drawHexOutline(buffer);  
+      h.drawHexOutline(buffer, 10);  
       //println("drawing hexagon: " + h + " at " + h.pixelX + ", " + h.pixelY);
     }
     buffer.endDraw();
+  }
+
+  void drawMap(PGraphics buffer) {
+    if (redraw) {
+      buffer.beginDraw();
+      buffer.clear();
+      buffer.noFill();
+      buffer.strokeWeight(4);
+      for (Map.Entry < PVector, Hexagon > me : hexgrid.allHexes.entrySet()) {
+        Hexagon h = me.getValue();
+        h.display(buffer);
+      }
+      redraw = false;
+      buffer.endDraw();
+    }
   }
 
   void drawHexes(PGraphics buffer) {
@@ -98,8 +116,14 @@ class Hexgrid {
     buffer.endDraw();
   }
 
+  Hexagon pickTarget(Hexagon start_) {
+    Hexagon target = pathFinder.createMap(start_);
+    return target;
+  }
+
   void seedMap(int i, Hexagon begin, Hexagon end) { //low i == more passable hexes
     float j;
+    println("seeding map");
     for (Map.Entry < PVector, Hexagon > me : allHexes.entrySet()) {
       j = random(10);
       Hexagon h = me.getValue();
@@ -199,9 +223,17 @@ class Hexgrid {
     return(neighborList);
   }
 
-  boolean checkHex(PVector hexKey_) {
+  boolean checkHex(PVector hexKey_) { //checks that the hex is in bounds && not a hazard/impassable
     if (allHexes.containsKey(hexKey_)) {
       return(passable(hexKey_));
+    } else {
+      return false;
+    }
+  }
+
+  boolean inBounds(PVector hexKey_) {
+    if (allHexes.containsKey(hexKey_)) {
+      return true;
     } else {
       return false;
     }
@@ -278,7 +310,7 @@ class Hexgrid {
   }
 
   PVector cubeSubtract(Hexagon a, Hexagon b) {
-    PVector sub = new PVector(a.hexQ - b.hexQ, a.hexR - b.hexR, a.hexS - b.hexS);
+    PVector sub = new PVector(a.hexQ - b.hexQ, a.hexR - b.hexR, a.hexS - b.hexS); //<>//
     return sub;
   }
   String[] listFileNames(String dir) {
