@@ -56,12 +56,12 @@ class CommandList {
     color fillColor;
     int weight;
     for (RoverCommand rc : commands) {
-      if(rc.execute){
+      if (rc.execute) {
         weight = 4;
-      }else{
+      } else {
         weight = 2;
       }
-      if (rc.inBounds) {
+      if (rc.inBounds && rc.passable) {
         if (rc.function) {
           strokeColor = fnColor;
           fillColor = fnColor;
@@ -154,12 +154,6 @@ class CommandList {
   RoverCommand getCurrentCmd() {
     RoverCommand rc = commands.get(0);
     return rc;
-  }
-
-  void initClearCommandList() {
-    for (RoverCommand rc : commands) {
-      rc.fillin = false;
-    }
   }
 
   boolean isActiveCommand() {

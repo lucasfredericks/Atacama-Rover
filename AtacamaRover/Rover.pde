@@ -126,7 +126,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
     if (queue.checkQueue()) {             //if there are executable commands in the queue
       currentCmd = queue.getCurrentCmd(); // sets currentcmd to commandlist<0> 
       if (currentCmd.inBounds == false) { //if currentcmd is oob
-        queue.endTurn(currentCmd.inBounds);
+        queue.endTurn();
         currentCmd = null;
         // do {                              //advance the queue until one is inbounds or there are no more commands
         //   queue.commandComplete(); 
@@ -225,7 +225,7 @@ class Rover { //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<
       myPort.write(cmdString + '\n');
       println("command: " + cmdString);
       //lastCommandStr = cmdString;
-      handshake = false;
+      handshake = false; //<>//
     }
   }
 

@@ -68,7 +68,7 @@ class Hexagon {
     Hexagon[] neighbors_ = hexgrid.getNeighbors(this);
     for (int i = 0; i < neighbors_.length; i++) {
       Hexagon h = neighbors_[i];
-      if (h!= null && hexgrid.checkHex(h.id)) {
+      if (h!= null && hexgrid.inBounds(h.id)) {
         neighbors.add(h);
       }
     }

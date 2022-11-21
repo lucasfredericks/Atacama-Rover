@@ -125,10 +125,9 @@ class Queue {
   }
 
   void scan() {
-    Hexagon h = hexgrid.pixelToHex(rover.location);
-    if (cardList.scan(h, scanDest)) {
-      cardList.lifeFound();
-    }
+    PVector id = hexgrid.pixelToKey(rover.location);
+    PVector target_ = scanDest.getKey();
+    cardList.scan(id, target_);
   }
 
   void returnToArena() {
@@ -288,21 +287,20 @@ class Queue {
 
   void commandComplete() {
     checkCt = 0;
-    //println("command complete");
-    commandList.commandComplete(); //deletes current cmd
-    //if(commandList.isEmpty()){
-
-    //}
-    if (checkQueue()==false) {
-      scan();
+    RoverCommand currCmd = commandList.getCurrentCmd();
+    if (!currCmd.passable) {
+      commandList.clearList();
+      cardList.hazard();
+    } else {
+      commandList.commandComplete(); //deletes current cmd
+      if (checkQueue()==false) {
+        scan();
+      }
     }
   }
 
-  void endTurn(boolean inBounds) {
+  void endTurn() {
     commandList.clearList();
-    if (inBounds == false) {
-      cardList.hazard();
-      scan();
-    }
+    scan();
   }
 }

@@ -1,4 +1,4 @@
-/* //<>// //<>//
+/* //<>//
  Hex grid calculations are based on the excellent interactive Hexagonal Grids guide
  from Amit Patel at Red Blob Games (https://www.redblobgames.com/grids/hexagons)
  
@@ -63,6 +63,7 @@ class Hexgrid {
       }
     }
     pathFinder = new AStar(this);
+    
   }
 
   void drawOutlines(PGraphics buffer) {
@@ -223,13 +224,13 @@ class Hexgrid {
     return(neighborList);
   }
 
-  boolean checkHex(PVector hexKey_) { //checks that the hex is in bounds && not a hazard/impassable
-    if (allHexes.containsKey(hexKey_)) {
-      return(passable(hexKey_));
-    } else {
-      return false;
-    }
-  }
+  //boolean checkHex(PVector hexKey_) { //checks that the hex is in bounds
+  //  if (allHexes.containsKey(hexKey_)) {
+  //    return(true);
+  //  } else {
+  //    return false;
+  //  }
+  //}
 
   boolean inBounds(PVector hexKey_) {
     if (allHexes.containsKey(hexKey_)) {
@@ -239,8 +240,11 @@ class Hexgrid {
     }
   }
 
-  boolean passable(PVector hexKey_) {
+  boolean isItPassable(PVector hexKey_) {
     Hexagon h = getHex(hexKey_);
+    if(!inBounds(hexKey_)){
+      return false;
+    }
     return h.passable;
   }
 
@@ -310,7 +314,7 @@ class Hexgrid {
   }
 
   PVector cubeSubtract(Hexagon a, Hexagon b) {
-    PVector sub = new PVector(a.hexQ - b.hexQ, a.hexR - b.hexR, a.hexS - b.hexS); //<>//
+    PVector sub = new PVector(a.hexQ - b.hexQ, a.hexR - b.hexR, a.hexS - b.hexS);
     return sub;
   }
   String[] listFileNames(String dir) {

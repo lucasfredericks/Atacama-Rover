@@ -3,7 +3,7 @@
 class RoverCommand extends Hexagon {
   int cardinalDir;
   float radianDir;
-  boolean reorient, drive, function, execute, inBounds;
+  boolean reorient, drive, function, execute, inBounds, passable;
   boolean turnToHeading = true;
   boolean scan = false;
   //PVector xy;
@@ -19,7 +19,8 @@ class RoverCommand extends Hexagon {
     execute = execute_;
     reorient = !drive;
     function = function_;
-    inBounds = (hexgrid.checkHex(hexKey_));
+    inBounds = (hexgrid.inBounds(hexKey_));
+    passable = (hexgrid.isItPassable(hexKey_));
     while (cardinalDir_ < 0 || cardinalDir_ >= 6) {
       if (cardinalDir_ < 0) {
         cardinalDir_ += 6;

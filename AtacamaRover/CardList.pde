@@ -1,4 +1,4 @@
-import java.util.Date; //<>//
+import java.util.Date;
 class CardList {
 
   PImage[] percyPhotos;
@@ -63,8 +63,20 @@ class CardList {
     dispTimer = millis();
     showCard = true;
   }
+  
+  boolean scan(PVector location, PVector target){
+   scanTimer = millis();
+   if(location.equals(target)){
+    lifeFound();
+    return true;
+   }else{
+     return false;
+   }
+  }
 
   boolean scan(Hexagon location, Hexagon target) {
+    println("location: " + location);
+    println("target: " + target);
     scanTimer = millis();
 
     PVector lKey = location.getKey();

@@ -36,6 +36,7 @@ class AStar {
     do {
       h = pickHex();
       target = h;
+      println("seeding map");
       hexgrid.seedMap(impassableRate, start, target); //loop randomly assigning impassable hexes
       resetLists();
     } while (!calculate() || path.size() > maxPathLength); //until there is a viable path less than max length
