@@ -43,44 +43,45 @@ class CommandList {
         cmdCount++;
       }
     }
+    //println(byteList);
     return byteList;
   }
 
   void drawHexes(PGraphics buffer) {
-    color c_ = #aae4df; 
+    //color c_ = #aae4df; 
+    color c_ = 255;
     color d_ = #ff0000;
-    color fnColor = #0098be;
+    color fnColor = #cfdb4b;
+    color strokeColor;
+    color fillColor;
+    int weight;
     for (RoverCommand rc : commands) {
-      if (rc.function) {
-        rc.drawHexOutline(buffer, fnColor, 4);
-      }
       if (rc.execute) {
-        if (rc.inBounds) {
-          if (rc.function) {
-            rc.drawHexFill(buffer, fnColor, 150);
-          } else {
-            rc.drawHexFill(buffer, c_, 150);
-          }
+        weight = 4;
+      } else {
+        weight = 2;
+      }
+      if (rc.inBounds && rc.passable) {
+        if (rc.function) {
+          strokeColor = fnColor;
+          fillColor = fnColor;
         } else {
-          rc.drawHexFill(buffer, d_, 150);
+          strokeColor = c_;
+          fillColor = c_;
         }
       } else {
-        if (rc.inBounds) {
-          if (rc.function) {
-            rc.drawHexFill(buffer, fnColor, 75);
-          } else {
-            rc.drawHexFill(buffer, c_, 75);
-          }
-        } else {
-          rc.drawHexFill(buffer, d_, 150);
-        }
+        strokeColor = d_;
+        fillColor = d_;
       }
+      rc.drawHexOutline(buffer, strokeColor, weight);
+      rc.drawHexFill(buffer, fillColor, 100);
     }
   }
 
   ArrayList<RoverCommand> getRCList() {
     return commands;
   }
+
 
   void createList(byte[] mainQueue, byte[] funcQueue, PVector hexKey, int cardinalHeading, boolean execute) {
     ArrayList<BytePlus> byteList = parseRawCmds(mainQueue, funcQueue);
@@ -98,14 +99,14 @@ class CommandList {
       } else if (bp.cmd == 100) { // 'd' right/clockwise
         drive = false;
         cardinalHeading += 1;
-      } else if (bp.cmd==101) { // 'e' scan for life
+      } else if (bp.cmd ==  101) { // 'e' scan for life
         drive = false;
       }
       while (cardinalHeading < 0 || cardinalHeading >= 6) {
         if (cardinalHeading < 0) {
           cardinalHeading += 6;
         }
-        if (cardinalHeading >=6) {
+        if (cardinalHeading >=  6) {
           cardinalHeading -= 6;
         }
       }
@@ -116,11 +117,26 @@ class CommandList {
       RoverCommand rc = new RoverCommand(hexgrid, hexKey, cardinalHeading, bp.cmd, bp.function, execute);
       commands.add(rc);
     }
+    // if (execute) {
+    //   scanAtEndOfList();
+    // }
   }
 
+  // void scanAtEndOfList() {
+  //   int listSize = commandList.size();
+  //   if (listSize > 0) {
+  //     RoverCommand rc = commandList.get(listSize - 1);
+  //     if (queue.isTargetHex(rc.hexKey) && execute)
+  //       RoverCommand temp = rc.copy();
+  //       temp.drive = false;
+  //       temp.scan = true;
+  //     commands.add(temp); 
+  //   }
+  //   return;
+  // }
   void customCommand(PVector hexKey, int cardinalHeading) {
     commands.clear();
-    byte cmd = 119;
+    byte cmd  = 119;
     RoverCommand customCommand = new RoverCommand(hexgrid, hexKey, cardinalHeading, cmd, false, true);
     commands.add(customCommand);
   }
@@ -138,12 +154,6 @@ class CommandList {
   RoverCommand getCurrentCmd() {
     RoverCommand rc = commands.get(0);
     return rc;
-  }
-
-  void initClearCommandList() {
-    for (RoverCommand rc : commands) {
-      rc.fillin = false;
-    }
   }
 
   boolean isActiveCommand() {
@@ -174,15 +184,15 @@ class CommandList {
 
   boolean isValid(byte tempByte, boolean function) {
 
-    if (tempByte == 119) {    // 'w' forward
+    if (tempByte == 119) {    //'w' forward
       return true;
     } else if (tempByte ==  97) { // 'a' counterclockwise
       return true;
-    } else if (tempByte == 115) { // 's' back
+    } else if (tempByte == 115) { //'s' back
       return true;
-    } else if (tempByte == 100) { // 'd' right/clockwise
+    } else if (tempByte == 100) { //'d' right/clockwise
       return true;
-    } else if (tempByte == 101) { // 'e' scan for life
+    } else if (tempByte == 101) { // 'e'scan for life
       return true;
     } else if (tempByte == 32) { // ' ' for stop
       //rover.stop();
@@ -201,6 +211,7 @@ class CommandList {
     }
   }
 }
+
 class BytePlus { 
   byte cmd;
   boolean function;

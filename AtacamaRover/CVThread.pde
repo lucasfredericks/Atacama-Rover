@@ -15,7 +15,7 @@ class CVThread extends Thread {
     detector = Boof.fiducialSquareBinaryRobust(0.1);
     String filePath = sketchPath() + "/data";
     detector.setIntrinsic(intrinsic);
-    //detector.guessCrappyIntrinsic(1280, 960);
+    detector.guessCrappyIntrinsic(1600, 1200);
     startFrame = frameCount;
   }
   void run() {

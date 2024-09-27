@@ -1,4 +1,4 @@
-import processing.serial.*; //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>// //<>//
+import processing.serial.*;  //<>//
 import java.util.Iterator;
 import boofcv.processing.*;
 PGraphics GUI;
@@ -11,6 +11,7 @@ class Queue {
   Serial myPort;
   Hexgrid hexgrid;
   Hexagon scanDest;
+  AStar pathFinder;
   boolean newCommands;
   float commandTotalDistance = 0;
   int checkCt = 0;
@@ -23,23 +24,32 @@ class Queue {
 
   //queue = new Queue(sketch, cardList, hexgrid, queuePortName, queueGUI);
 
-  Queue(PApplet sketch_, CardList cardList_, Hexgrid hexgrid_, String serial, PGraphics GUI_, CommandList commandList_) {
+  Queue(PApplet sketch_, Hexgrid hexgrid_, String serial, PGraphics GUI_, CommandList commandList_) {
     println("queue init start");
-    cardList = cardList_;
     hexgrid = hexgrid_;
-    //    byteList = new ArrayList<Byte>();
+    cardList = new CardList(this);
     newCommands = false;
     sketch = sketch_;
     GUI = GUI_;
     myPort = new Serial(sketch, serial, 115200);
     println("queue Serial init");
     //moveStartLocation = new PVector();
-    Object[] keys = hexgrid.allHexes.keySet().toArray();
-    Object randHexKey = keys[new Random().nextInt(keys.length)];
-    scanDest = hexgrid.getHex((PVector)randHexKey);
     //location = new PVector(camWidth/2, camHeight/2);
     commandList = commandList_;    
     println("queue init complete");
+  }
+
+  boolean isTargetHex(Hexagon h_) {
+    if (h_.getKey() == scanDest.getKey()) {
+      return true;
+    }
+    return false;
+  }
+  boolean isTargetHex(PVector key_) {
+    if (key_ == scanDest.getKey()) {
+      return true;
+    }
+    return false;
   }
 
   void initRover(Rover rover_) {
@@ -48,7 +58,9 @@ class Queue {
 
   void update() {
 
-    if ( myPort.available() > 0) { // If data is available,
+    cardList.run();
+
+    if (myPort.available() > 0) { // If data is available,
 
       byte[] inBuffer = new byte[12];
       byte interesting = 16; //endByte
@@ -63,15 +75,24 @@ class Queue {
       boolean execute;
       for (int i = 0; i < 5; i++) {
         mainQueue[i] = inBuffer[i];
-        funcQueue[i] = inBuffer[i+6];
+        funcQueue[i] = inBuffer[i + 6];
       }
       //println("parsing queue into byte list");
       if (inBuffer[5] == 'n') {//if the user has pressed the button
-        println("executable command received");
+        println("button pressed");
+        if (cardList.showCard) { //if the kiosk is displaying a photo, close the photo and clear the queue
+          cardList.stopDisplayingCard();
+          execute = false;
+          commandList.clearList();
+          setButtonColor();
+          return;
+        }
         newCommands = true;
         if (commandList.isExecutableCommand()) { //if the rover is already moving
           execute = false; //the first button press will cancel current execution.
           commandList.clearList();
+          scan();
+          return;
         } else {
           execute = true;
           commandList.clearList();
@@ -104,50 +125,54 @@ class Queue {
   }
 
   void scan() {
-    Hexagon h = hexgrid.pixelToHex(rover.location);
-    if (cardList.scan(h, scanDest)) {
-      pickScanDest();
-    }
+    PVector id = hexgrid.pixelToKey(rover.location);
+    PVector target_ = scanDest.getKey();
+    cardList.scan(id, target_);
   }
 
   void returnToArena() {
     commandList.clearList();
-    PVector middle = new PVector(camWidth/2, camHeight/2);
+    PVector middle = new PVector(camWidth / 2, camHeight / 2);
     PVector tempDest = new PVector();
     PVector tempKey = new PVector();
     int i = 1;
     float dy;
     float dx;
     do {
-      dy = lerp(rover.location.y, middle.y, i* .05); //linear interpolation towards center of arena //<>//
-      dx = lerp(rover.location.x, middle.x, i* .05);
+      dy = lerp(rover.location.y, middle.y, i * .05); //linear interpolation towards center of arena
+      dx = lerp(rover.location.x, middle.x, i * .05);
       tempDest.set(dx, dy);
       tempKey = hexgrid.pixelToKey(tempDest);
       i++;
-    } while (hexgrid.checkHex(tempKey) == false); //lerp until we find an inbounds hex
-    println("return trajectory found");
-    float targetHeading = (atan2(tempDest.y, tempDest.x)+.5*PI);
+    } while (hexgrid.allHexes.containsKey(tempKey) == false); //lerp until we find an inbounds hex
+    //println("return trajectory found");
+    float targetHeading = (atan2(tempDest.y, tempDest.x) +.5 * PI);
     targetHeading = hexgrid.normalizeRadians(targetHeading);
     int cardinalHeading = roundHeading(targetHeading);
     commandList.customCommand(tempKey, cardinalHeading);
+    pickScanDest(tempKey);
   }
 
 
   void pickScanDest() {
-    Hexagon h;
-    Object[] keys = hexgrid.allHexes.keySet().toArray();
-    do {
-      Object randHexKey = keys[new Random().nextInt(keys.length)];
-      h = hexgrid.getHex((PVector)randHexKey);
-    } while (h == scanDest);
-    scanDest = h;
+    println("picking scan destination");
+
+    scanDest = hexgrid.pickTarget(hexgrid.pixelToHex(rover.location));
     println("pick scan dest complete");
   }
+
+  void pickScanDest(PVector tempKey) {
+    if (hexgrid.inBounds(rover.location)) {
+      scanDest = hexgrid.pickTarget(hexgrid.getHex(tempKey));
+    }
+  }
+
+
   int roundHeading(float heading_) {
     int cHeading = 0;
-    if (degrees(heading_) > 330 || degrees(heading_) <= 30 ) { //refactor this into radians probably
+    if (degrees(heading_) > 330 || degrees(heading_) <= 30) { //refactor this into radians probably
       cHeading = 0;
-    } else if (degrees(heading_) >  30 && degrees(heading_) <= 90 ) {
+    } else if (degrees(heading_) >  30 && degrees(heading_) <= 90) {
       cHeading = 1;
     } else if (degrees(heading_) >  90 && degrees(heading_) <= 150) {
       cHeading = 2;
@@ -158,30 +183,39 @@ class Queue {
     } else if (degrees(heading_) > 270 && degrees(heading_) <= 330) {
       cHeading = 5;
     }
-    return (int) cHeading;
+    return(int) cHeading;
   }
 
   void updateGUI() {
+
+    int tileSize = 140;
+    int margin = 20;
+    int radius = 10;
+    color fnCol = #cfdb4b;
     GUI.beginDraw();
     //GUI.background(0, 255, 255);
     GUI.clear();
     GUI.pushMatrix();
-    GUI.translate(0, GUI.height/2);
+    GUI.translate(margin+tileSize/2, GUI.height / 2);
     GUI.imageMode(CENTER);
     GUI.rectMode(CENTER);
-    GUI.fill(#0098be);
+    GUI.fill(255);
+    GUI.strokeWeight(10);
+
     ArrayList<RoverCommand> commands = commandList.getRCList();
     for (RoverCommand rc : commands) {
-      GUI.translate(100, 0);
       GUI.pushMatrix();
       PImage icon = rc.getIcon();
       if (rc.function) {
-        GUI.noStroke();
-        GUI.rect(0, 0, 102, 102);
+        GUI.stroke(fnCol);
+      } else {
+        GUI.stroke(255);
       }
+      GUI.rect(0, 0, tileSize, tileSize, radius);
       //GUI.rotate(rc.radianDir);
-      GUI.image(icon, 0, 0, 80, 80);
+      GUI.image(icon, 0, 0, tileSize-margin, tileSize-margin);
       GUI.popMatrix();
+      GUI.translate(margin + tileSize, 0);
     }
     GUI.popMatrix();
     GUI.endDraw();
@@ -190,7 +224,9 @@ class Queue {
   void drawHexes(PGraphics buffer) {
     buffer.beginDraw();
     commandList.drawHexes(buffer);
-    scanDest.blinkHex(buffer);
+    if (scanDest != null) {
+      scanDest.blinkHex(buffer);
+    }
     buffer.endDraw();
   }
 
@@ -211,6 +247,17 @@ class Queue {
     return commandList.getCurrentCmd();
   }
 
+  boolean cardBool() {
+    if (cardList.showCard) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  PImage displayCard() {
+    return cardList.displayCard();
+  }
 
   boolean checkQueue() {
     if (commandList.isEmpty() || commandList.isExecutableCommand() == false) {
@@ -221,7 +268,7 @@ class Queue {
   }
 
   boolean checkInBounds() {
-    if (commandList.isEmpty() || commandList.isInBounds() == false) {
+    if (commandList.isInBounds() == false) {
       return false;
     } else {
       return true;
@@ -240,8 +287,20 @@ class Queue {
 
   void commandComplete() {
     checkCt = 0;
-    //println("command complete");
-    commandList.commandComplete(); //deletes current cmd
+    RoverCommand currCmd = commandList.getCurrentCmd();
+    if (!currCmd.passable) {
+      commandList.clearList();
+      cardList.hazard();
+    } else {
+      commandList.commandComplete(); //deletes current cmd
+      if (checkQueue()==false) {
+        scan();
+      }
+    }
   }
 
+  void endTurn() {
+    commandList.clearList();
+    scan();
+  }
 }
